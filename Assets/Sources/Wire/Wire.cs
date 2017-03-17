@@ -126,9 +126,23 @@ public class Wire
             {
                 gameObjectName = gameObjectAttribute.name;
             }
-            UnityEngine.GameObject instanceParent = new UnityEngine.GameObject(gameObjectName);
-            GameObject instance = GameObject.Instantiate(unityObject as GameObject, instanceParent.transform) as GameObject;
-            return instance.GetComponent(type);
+            //UnityEngine.GameObject instanceParent = new UnityEngine.GameObject(gameObjectName);
+            GameObject instance = GameObject.Instantiate(unityObject as GameObject /*, instanceParent.transform*/) as GameObject;
+            instance.name = gameObjectName;
+
+            foreach(MonoBehaviour monoBehaviour in instance.GetComponentsInChildren<MonoBehaviour>())
+            {
+                wire.Inject(monoBehaviour);
+            }
+
+            if (type.IsAssignableFrom(typeof(Component)))
+            {
+                return instance.GetComponent(type);
+            } else if (type.IsAssignableFrom(typeof(GameObject)))
+            {
+                return instance;
+            }
+            throw new Exception("Unexpected binding type " + type);
         }
     }
 
