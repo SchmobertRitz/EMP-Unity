@@ -138,14 +138,16 @@ public class Wire
                 }
             }
 
-            if (type.IsAssignableFrom(typeof(Component)))
+            /* if (type.IsAssignableFrom(typeof(Component)))
             {
                 return instance.GetComponent(type);
-            } else if (type.IsAssignableFrom(typeof(GameObject)))
+            } else*/
+            if (type.IsAssignableFrom(typeof(GameObject)))
             {
                 return instance;
             }
-            throw new Exception("Unexpected binding type " + type);
+            return instance.GetComponent(type);
+            //throw new Exception("Unexpected binding type " + type);
         }
     }
 
