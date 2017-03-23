@@ -132,7 +132,10 @@ public class Wire
 
             foreach(MonoBehaviour monoBehaviour in instance.GetComponentsInChildren<MonoBehaviour>())
             {
-                wire.Inject(monoBehaviour);
+                if (monoBehaviour != null)
+                {
+                    wire.Inject(monoBehaviour);
+                }
             }
 
             if (type.IsAssignableFrom(typeof(Component)))
@@ -165,6 +168,11 @@ public class Wire
 
     private Dictionary<string, Binding> bindings = new Dictionary<string, Binding>();
 
+    public Wire()
+    {
+        BindInstance<Wire>(this);
+    }
+
     public void BindInstance<T>(string name, object instance)
     {
         AddBinding(new InstanceBinding(this, name, typeof(T), instance));
@@ -196,13 +204,17 @@ public class Wire
         }
     }
 
-    public Wire()
+    private void TryToAutoRegisterBinding(string name, Type type)
     {
-        BindInstance<Wire>(this);
+        
     }
 
-    public object Inject(object @object)
+    public T Inject<T>(T @object)
     {
+        if (@object == null)
+        {
+            throw new NullReferenceException("Null was given to Wire.inject.");
+        }
         List<MemberInfo> injectionMembers = FindInjectionMembers(@object);
         List<MethodInfo> injectionMethods = FindInjectionMethods(@object);
 
