@@ -1,5 +1,5 @@
 ﻿using System;
 
-[AttributeUsage(AttributeTargets.Method)]
+[AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
 public class SingletonAttribute : Attribute {
 }

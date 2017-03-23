@@ -32,6 +32,16 @@ public class TypeHelper {
         return Attribute.GetCustomAttribute(memberInfo, typeof(TAttribute)) as TAttribute != null;
     }
 
+    public static bool HasAttribute<TAttribute>(Type type) where TAttribute : Attribute
+    {
+        return Attribute.GetCustomAttribute(type, typeof(TAttribute)) as TAttribute != null;
+    }
+
+    public static bool HasAttribute<TAttribute>(ConstructorInfo constructorInfo) where TAttribute : Attribute
+    {
+        return Attribute.GetCustomAttribute(constructorInfo, typeof(TAttribute)) as TAttribute != null;
+    }
+
     public static MethodInfo[] AllMethodsOf(Type type)
     {
         return type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);

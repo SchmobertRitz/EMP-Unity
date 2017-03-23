@@ -10,7 +10,17 @@ public class Wire
     {
         public static object ResolveParametersAndInvokeMethod(Wire wire, MethodInfo methodInfo, object @object)
         {
-            ParameterInfo[] parameterInfos = methodInfo.GetParameters();
+            return methodInfo.Invoke(@object, ResolveParameters(wire, methodInfo));
+        }
+
+        public static object ResolveParametersAndInvokeConstructor(Wire wire, ConstructorInfo constructorInfo)
+        {
+            return constructorInfo.Invoke(ResolveParameters(wire, constructorInfo));
+        }
+
+        public static object[] ResolveParameters(Wire wire, MethodBase methodBase)
+        {
+            ParameterInfo[] parameterInfos = methodBase.GetParameters();
             object[] parameters = new object[parameterInfos.Length];
             for (int i = 0; i < parameterInfos.Length; i++)
             {
@@ -24,22 +34,62 @@ public class Wire
                 }
                 parameters[i] = wire.Get(name, type);
             }
-
-            return methodInfo.Invoke(@object, parameters);
+            return parameters;
         }
     }
 
-    private abstract class Binding
+    private interface IBinding
+    {
+        Type BoundType
+        { get; }
+
+        string BoundName
+        { get; }
+
+        object GetInstance();
+    }
+
+    private class SingletonBindingDecorator : IBinding
+    {
+        private object instance;
+        private IBinding delegateBinding;
+
+        public Type BoundType
+        { get { return delegateBinding.BoundType;  } }
+
+        public string BoundName
+        { get { return delegateBinding.BoundName; } }
+
+        public SingletonBindingDecorator(IBinding delegateBinding)
+        {
+            this.delegateBinding = delegateBinding;
+        }
+
+        public object GetInstance()
+        {
+            if (instance == null)
+            {
+                instance = delegateBinding.GetInstance();
+            }
+            return instance;
+        }
+    }
+
+    private abstract class Binding : IBinding
     {
         protected Wire wire;
-        public Type type;
-        public string name;
 
-        public Binding(Wire wire, string name, Type type)
+        public Type BoundType
+        { get; private set; }
+
+        public string BoundName
+        { get; private set; }
+
+    public Binding(Wire wire, string name, Type type)
         {
             this.wire = wire;
-            this.name = name;
-            this.type = type;
+            this.BoundName = name;
+            this.BoundType = type;
         }
 
         public abstract object GetInstance();
@@ -94,17 +144,16 @@ public class Wire
             string gameObjectName;
             if (gameObjectAttribute.name == null)
             {
-                gameObjectName = componentType.Name + (name == null ? "" : "_" + name);
+                gameObjectName = componentType.Name + (BoundName == null ? "" : "_" + BoundName);
                 int c = 1;
                 while (UnityEngine.GameObject.Find("/" + gameObjectName) != null)
                 {
-                    gameObjectName = componentType.Name + (name == null ? "" : "_" + name) + "(" + (c++) + ")";
+                    gameObjectName = componentType.Name + (BoundName == null ? "" : "_" + BoundName) + "(" + (c++) + ")";
                 }
             }
             else
             {
                 gameObjectName = gameObjectAttribute.name;
-
             }
             UnityEngine.GameObject instance = new UnityEngine.GameObject(gameObjectName);
             return instance.AddComponent(componentType);
@@ -115,11 +164,11 @@ public class Wire
             string gameObjectName;
             if (gameObjectAttribute.name == null)
             {
-                gameObjectName = type.Name + (name == null ? "" : "_" + name);
+                gameObjectName = BoundType.Name + (BoundName == null ? "" : "_" + BoundName);
                 int c = 1;
                 while (UnityEngine.GameObject.Find("/" + gameObjectName) != null)
                 {
-                    gameObjectName = type.Name + (name == null ? "" : "_" + name) + "(" + (c++) + ")";
+                    gameObjectName = BoundType.Name + (BoundName == null ? "" : "_" + BoundName) + "(" + (c++) + ")";
                 }
             }
             else
@@ -142,33 +191,33 @@ public class Wire
             {
                 return instance.GetComponent(type);
             } else*/
-            if (type.IsAssignableFrom(typeof(GameObject)))
+            if (BoundType.IsAssignableFrom(typeof(GameObject)))
             {
                 return instance;
             }
-            return instance.GetComponent(type);
+            return instance.GetComponent(BoundType);
             //throw new Exception("Unexpected binding type " + type);
         }
     }
 
-    private class SingletonModuleBinding : ModuleBinding
+    private class AutoRegisteredPocoROBinding : Binding
     {
-        private object instance;
+        private ConstructorInfo constructorInfo;
 
-        public SingletonModuleBinding(Wire wire, string name, Type type, MethodInfo methodInfo, object module)
-            : base(wire, name, type, methodInfo, module) { }
+        public AutoRegisteredPocoROBinding(Wire wire, string name, Type type, ConstructorInfo methodInfo)
+            : base(wire, name, type)
+        {
+            this.constructorInfo = methodInfo;
+        }
 
         public override object GetInstance()
         {
-            if (instance == null)
-            {
-                instance = base.GetInstance();
-            }
+            object instance = InvokationHelper.ResolveParametersAndInvokeConstructor(wire, constructorInfo);
             return instance;
         }
     }
 
-    private Dictionary<string, Binding> bindings = new Dictionary<string, Binding>();
+    private Dictionary<string, IBinding> bindings = new Dictionary<string, IBinding>();
 
     public Wire()
     {
@@ -194,21 +243,53 @@ public class Wire
             {
                 string name = providesAttribute.name;
                 Type type = (providesAttribute.interfaceType != null ? providesAttribute.interfaceType : methodInfo.ReturnType);
-                
+
+                IBinding binding = new ModuleBinding(this, name, type, methodInfo, module);
                 if (TypeHelper.HasAttribute<SingletonAttribute>(methodInfo))
                 {
-                    AddBinding(new SingletonModuleBinding(this, name, type, methodInfo, module));
-                } else
-                {
-                    AddBinding(new ModuleBinding(this, name, type, methodInfo, module));
+                    binding = new SingletonBindingDecorator(binding);
                 }
+                AddBinding(binding);
             }
         }
     }
 
     private void TryToAutoRegisterBinding(string name, Type type)
     {
-        
+        ConstructorInfo defaultConstructor = null;
+        ConstructorInfo injectableConstructor = null;
+        foreach (ConstructorInfo constructorInfo in type.GetConstructors())
+        {
+            ParameterInfo[] parameterInfos = constructorInfo.GetParameters();
+            if (parameterInfos.Length == 0)
+            {
+                defaultConstructor = constructorInfo;
+            }
+            if (TypeHelper.HasAttribute<InjectAttribute>(constructorInfo))
+            {
+                if (injectableConstructor != null)
+                {
+                    throw new Exception("Multiple injectable constructors found in type " + type + ". Only one is allowed.");
+                }
+                injectableConstructor = constructorInfo;
+            }
+        }
+        ConstructorInfo constructor = null;
+        if (injectableConstructor != null) {
+            constructor = injectableConstructor;
+        } else if (defaultConstructor != null)
+        {
+            constructor = defaultConstructor;
+        } else
+        {
+            throw new Exception("Unable to auto bind type " + type + ". No injectable constructor and no default constructor found.");
+        }
+        IBinding binding = new AutoRegisteredPocoROBinding(this, name, type, constructor);
+        if (TypeHelper.HasAttribute<SingletonAttribute>(type))
+        {
+            binding = new SingletonBindingDecorator(binding);
+        }
+        AddBinding(binding);
     }
 
     public T Inject<T>(T @object)
@@ -270,22 +351,29 @@ public class Wire
         return result;
     }
 
-    private void AddBinding(Binding binding)
+    private void AddBinding(IBinding binding)
     {
-        string key = GetKeyForBinding(binding.name, binding.type);
+        string key = GetKeyForBinding(binding.BoundName, binding.BoundType);
         if (!bindings.ContainsKey(key))
         {
             bindings.Add(key, binding);
         }
         else
         {
-            throw new Exception("Already a binding available for " + binding.type.Name + (binding.name != null ? " named with " + binding.name + "." : "."));
+            throw new Exception("Already a binding available for " + binding.BoundType.Name + (binding.BoundName != null ? " named with " + binding.BoundName + "." : "."));
         }
     }
 
     public object Get(string name, Type type)
     {
-        Binding binding;
+        IBinding binding;
+        if (bindings.TryGetValue(GetKeyForBinding(name, type), out binding))
+        {
+            return binding.GetInstance();
+        }
+
+        TryToAutoRegisterBinding(name, type);
+
         if (bindings.TryGetValue(GetKeyForBinding(name, type), out binding))
         {
             return binding.GetInstance();
