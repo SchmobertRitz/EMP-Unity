@@ -213,7 +213,7 @@ public class Wire
         public override object GetInstance()
         {
             object instance = InvokationHelper.ResolveParametersAndInvokeConstructor(wire, constructorInfo);
-            return instance;
+            return wire.Inject(instance);
         }
     }
 

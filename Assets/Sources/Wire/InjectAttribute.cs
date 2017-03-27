@@ -1,6 +1,6 @@
 ﻿using System;
 
-[AttributeUsage(AttributeTargets.Method | AttributeTargets.Field | AttributeTargets.Property)]
+[AttributeUsage(AttributeTargets.Method | AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Constructor)]
 public class InjectAttribute : Attribute {
     public string name;
 
