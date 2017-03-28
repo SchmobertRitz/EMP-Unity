@@ -304,15 +304,36 @@ public class Wire
         foreach (MemberInfo memberInfo in injectionMembers)
         {
             InjectAttribute injectAttribute;
+            BindAttribute bindAttribute;
+
             if (TypeHelper.TryToGetAttribute(memberInfo, out injectAttribute))
             {
                 if (memberInfo is FieldInfo)
                 {
                     (memberInfo as FieldInfo).SetValue(@object, this.Get(injectAttribute.name, (memberInfo as FieldInfo).FieldType));
                 }
-                else if (memberInfo is PropertyInfo)
+                else if(memberInfo is PropertyInfo)
                 {
                     (memberInfo as PropertyInfo).SetValue(@object, this.Get(injectAttribute.name, (memberInfo as PropertyInfo).PropertyType), null);
+                }
+            }
+
+            if (@object is MonoBehaviour && TypeHelper.TryToGetAttribute(memberInfo, out bindAttribute))
+            {
+                Type fieldType = (memberInfo is FieldInfo) ? (memberInfo as FieldInfo).FieldType : (memberInfo as PropertyInfo).PropertyType;
+                object objectToBind = FindGameObjectByPath(@object as MonoBehaviour, bindAttribute.path);
+
+                if (fieldType.IsSubclassOf(typeof(Component))) {
+                    objectToBind = (objectToBind as GameObject).GetComponent(fieldType);
+                }
+
+                if (memberInfo is FieldInfo)
+                {
+                    (memberInfo as FieldInfo).SetValue(@object, objectToBind);
+                }
+                else
+                {
+                    (memberInfo as PropertyInfo).SetValue(@object, objectToBind, null);
                 }
             }
         }
@@ -323,6 +344,25 @@ public class Wire
         }
 
         return @object;
+    }
+
+    private GameObject FindGameObjectByPath(MonoBehaviour start, string path)
+    {
+        GameObject result = start.gameObject;
+        if (path != null)
+        {
+            foreach (string token in path.Split('/'))
+            {
+                if (token.Equals(".."))
+                {
+                    result = result.transform.parent.gameObject;
+                } else
+                {
+                    result = result.transform.FindChild(token).gameObject;
+                }
+            }
+        }
+        return result;
     }
 
     private List<MethodInfo> FindInjectionMethods(object @object)
@@ -343,7 +383,8 @@ public class Wire
         List<MemberInfo> result = new List<MemberInfo>();
         foreach (MemberInfo memberInfo in TypeHelper.AllMembersOf(@object.GetType()))
         {
-            if (TypeHelper.HasAttribute<InjectAttribute>(memberInfo))
+            if (TypeHelper.HasAttribute<InjectAttribute>(memberInfo)
+                || TypeHelper.HasAttribute<BindAttribute>(memberInfo))
             {
                 result.Add(memberInfo);
             }
