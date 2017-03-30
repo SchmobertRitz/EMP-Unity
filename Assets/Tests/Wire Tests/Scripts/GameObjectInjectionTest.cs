@@ -1,6 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 public class GameObjectInjectionTest : MonoBehaviour {
 
@@ -26,7 +24,7 @@ public class GameObjectInjectionTest : MonoBehaviour {
     [GameObject("An Electron")]
     private UnityEngine.Object ProvideElectron()
     {
-        return Resources.Load("Electron");
+        return Resources.Load("Electron Pivot");
     }
 
 }

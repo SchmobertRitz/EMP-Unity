@@ -200,11 +200,11 @@ public class Wire
         }
     }
 
-    private class AutoRegisteredPocoROBinding : Binding
+    private class AutoRegisteredPocoBinding : Binding
     {
         private ConstructorInfo constructorInfo;
 
-        public AutoRegisteredPocoROBinding(Wire wire, string name, Type type, ConstructorInfo methodInfo)
+        public AutoRegisteredPocoBinding(Wire wire, string name, Type type, ConstructorInfo methodInfo)
             : base(wire, name, type)
         {
             this.constructorInfo = methodInfo;
@@ -214,6 +214,27 @@ public class Wire
         {
             object instance = InvokationHelper.ResolveParametersAndInvokeConstructor(wire, constructorInfo);
             return wire.Inject(instance);
+        }
+    }
+
+
+    private class AutoRegisteredComponentBinding : Binding
+    {
+        public AutoRegisteredComponentBinding(Wire wire, string name, Type type)
+            : base(wire, name, type)
+        {}
+
+        public override object GetInstance()
+        {
+            string gameObjectName = BoundType.Name + (BoundName == null ? "" : "_" + BoundName);
+            int c = 1;
+            while (UnityEngine.GameObject.Find("/" + gameObjectName) != null)
+            {
+                gameObjectName = BoundType.Name + (BoundName == null ? "" : "_" + BoundName) + "(" + (c++) + ")";
+            }
+
+            GameObject instance = new GameObject(gameObjectName);
+            return wire.Inject(instance.AddComponent(BoundType));
         }
     }
 
@@ -284,7 +305,15 @@ public class Wire
         {
             throw new Exception("Unable to auto bind type " + type + ". No injectable constructor and no default constructor found.");
         }
-        IBinding binding = new AutoRegisteredPocoROBinding(this, name, type, constructor);
+        IBinding binding;
+        if (type.IsSubclassOf(typeof(Component)))
+        {
+            binding = new AutoRegisteredComponentBinding(this, name, type);
+        }
+        else
+        {
+            binding = new AutoRegisteredPocoBinding(this, name, type, constructor);
+        }
         if (TypeHelper.HasAttribute<SingletonAttribute>(type))
         {
             binding = new SingletonBindingDecorator(binding);
@@ -405,26 +434,41 @@ public class Wire
         }
     }
 
-    public object Get(string name, Type type)
+    private object GetInternal(string name, Type type, bool allowNullResult)
     {
         IBinding binding;
         if (bindings.TryGetValue(GetKeyForBinding(name, type), out binding))
         {
-            return binding.GetInstance();
+            object result = binding.GetInstance();
+            if (result == null && !allowNullResult)
+            {
+                throw new Exception("Binding returns null.");
+            }
+            return result;
         }
 
         TryToAutoRegisterBinding(name, type);
 
         if (bindings.TryGetValue(GetKeyForBinding(name, type), out binding))
         {
-            return binding.GetInstance();
+            object result = binding.GetInstance();
+            if (result == null && !allowNullResult)
+            {
+                throw new Exception("Binding returns null.");
+            }
+            return result;
         }
         throw new Exception("No binding found for " + type.Name + (name != null ? " named with " + name + "." : "."));
     }
 
+    public object Get(string name, Type type)
+    {
+        return GetInternal(name, type, false);
+    }
+
     public T Get<T>(string name)
     {
-        return (T)Get(name, typeof(T));
+        return (T) Get(name, typeof(T));
     }
 
     public T Get<T>()
@@ -432,7 +476,39 @@ public class Wire
         return Get<T>(null);
     }
 
+    public object NullableGet(string name, Type type)
+    {
+        return GetInternal(name, type, true);
+    }
 
+    public T NullableGet<T>(string name)
+    {
+        return (T) NullableGet(name, typeof(T));
+    }
+
+    public T NullableGet<T>()
+    {
+        return NullableGet<T>(null);
+    }
+
+
+    public GameObject InstantiateResource(string resource)
+    {
+        return InstantiatePrefab((GameObject) Resources.Load(resource));
+    }
+
+    public GameObject InstantiatePrefab(GameObject prefab)
+    {
+        GameObject instance = (GameObject.Instantiate(prefab));
+        foreach (MonoBehaviour monoBehaviour in instance.GetComponentsInChildren<MonoBehaviour>())
+        {
+            if (monoBehaviour != null)
+            {
+                Inject(monoBehaviour);
+            }
+        }
+        return instance;
+    }
 
     private string GetKeyForBinding(string name, Type type)
     {
