@@ -77,7 +77,7 @@ public class EventBus : MonoBehaviour
     private void RegisterInternal(System.Object target, string busname)
     {
         Dictionary<string, List<System.Object>> registeredTargets = GetRegisteredTargets(busname);
-        MethodInfo[] methods = target.GetType().GetMethods((BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly));
+        IEnumerable<MethodInfo> methods = target.GetType().GetMethods((BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly));
         foreach (MethodInfo method in methods)
         {
             if (method.Name.Equals("OnEvent"))

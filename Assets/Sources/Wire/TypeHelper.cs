@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 
@@ -6,43 +7,49 @@ public class TypeHelper {
 
     public static bool TryToGetAttribute<TAttribute>(MethodInfo methodInfo, out TAttribute attribute) where TAttribute : Attribute
     {
-        attribute = Attribute.GetCustomAttribute(methodInfo, typeof(TAttribute)) as TAttribute;
+        attribute = FirstOrNull(methodInfo.GetCustomAttributes(typeof(TAttribute), true)) as TAttribute;
         return (attribute != null);
     }
 
     public static bool TryToGetAttribute<TAttribute>(ParameterInfo parameterInfo, out TAttribute attribute) where TAttribute : Attribute
     {
-        attribute = Attribute.GetCustomAttribute(parameterInfo, typeof(TAttribute)) as TAttribute;
+        attribute = FirstOrNull(parameterInfo.GetCustomAttributes(typeof(TAttribute), true)) as TAttribute;
         return (attribute != null);
     }
 
     public static bool TryToGetAttribute<TAttribute>(MemberInfo memberInfo, out TAttribute attribute) where TAttribute : Attribute
     {
-        attribute = Attribute.GetCustomAttribute(memberInfo, typeof(TAttribute)) as TAttribute;
+        attribute = FirstOrNull(memberInfo.GetCustomAttributes(typeof(TAttribute), true)) as TAttribute;
         return (attribute != null);
     }
 
     public static bool HasAttribute<TAttribute>(MethodInfo methodInfo) where TAttribute : Attribute
     {
-        return Attribute.GetCustomAttribute(methodInfo, typeof(TAttribute)) as TAttribute != null;
+        return FirstOrNull(methodInfo.GetCustomAttributes(typeof(TAttribute), true)) as TAttribute != null;
     }
 
     public static bool HasAttribute<TAttribute>(MemberInfo memberInfo) where TAttribute : Attribute
     {
-        return Attribute.GetCustomAttribute(memberInfo, typeof(TAttribute)) as TAttribute != null;
+        return FirstOrNull(memberInfo.GetCustomAttributes(typeof(TAttribute), true)) as TAttribute != null;
     }
 
     public static bool HasAttribute<TAttribute>(Type type) where TAttribute : Attribute
     {
-        return Attribute.GetCustomAttribute(type, typeof(TAttribute)) as TAttribute != null;
+        return FirstOrNull(type.GetCustomAttributes(typeof(TAttribute), true)) as TAttribute != null;
     }
 
     public static bool HasAttribute<TAttribute>(ConstructorInfo constructorInfo) where TAttribute : Attribute
     {
-        return Attribute.GetCustomAttribute(constructorInfo, typeof(TAttribute)) as TAttribute != null;
+        return FirstOrNull(constructorInfo.GetCustomAttributes(typeof(TAttribute), true)) as TAttribute != null;
     }
 
-    public static MethodInfo[] AllMethodsOf(Type type)
+    private static object FirstOrNull(IEnumerable<object> enumerable)
+    {
+        IEnumerator e = enumerable.GetEnumerator();
+        return e.MoveNext() ? e.Current : null;
+    }
+
+    public static IEnumerable<MethodInfo> AllMethodsOf(Type type)
     {
         return type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
     }
