@@ -1,12 +1,15 @@
 ﻿using System;
 
-public interface IBinding
+namespace EMP.Wire
 {
-    Type BoundType
-    { get; }
+    public interface IBinding
+    {
+        Type BoundType
+        { get; }
 
-    string BoundName
-    { get; }
+        string BoundName
+        { get; }
 
-    object GetInstance();
+        object GetInstance();
+    }
 }

@@ -1,14 +1,18 @@
 ﻿using System;
 
-[AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
-public class BindAttribute : Attribute
-{
-    public string path;
+namespace EMP.Wire {
 
-    public BindAttribute(string path)
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
+    public class BindAttribute : Attribute
     {
-        this.path = path;
+        public string path;
+
+        public BindAttribute(string path)
+        {
+            this.path = path;
+        }
+
+        public BindAttribute() : this(null) { }
     }
 
-    public BindAttribute() : this(null) { }
 }

@@ -1,19 +1,22 @@
 ﻿using System;
 using System.Reflection;
 
-public class AutoRegisteredPocoBinding : AbstractBinding
+namespace EMP.Wire
 {
-    private ConstructorInfo constructorInfo;
-
-    public AutoRegisteredPocoBinding(Wire wire, string name, Type type, ConstructorInfo methodInfo)
-        : base(wire, name, type)
+    public class AutoRegisteredPocoBinding : AbstractBinding
     {
-        this.constructorInfo = methodInfo;
-    }
+        private ConstructorInfo constructorInfo;
 
-    public override object GetInstance()
-    {
-        object instance = InvokationHelper.ResolveParametersAndInvokeConstructor(wire, constructorInfo);
-        return wire.Inject(instance);
+        public AutoRegisteredPocoBinding(Wire wire, string name, Type type, ConstructorInfo methodInfo)
+            : base(wire, name, type)
+        {
+            this.constructorInfo = methodInfo;
+        }
+
+        public override object GetInstance()
+        {
+            object instance = InvokationHelper.ResolveParametersAndInvokeConstructor(wire, constructorInfo);
+            return wire.Inject(instance);
+        }
     }
 }

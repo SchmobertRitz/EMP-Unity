@@ -1,5 +1,9 @@
 ﻿using System;
 
-[AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
-public class SingletonAttribute : Attribute {
+namespace EMP.Wire
+{
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
+    public class SingletonAttribute : Attribute
+    {
+    }
 }

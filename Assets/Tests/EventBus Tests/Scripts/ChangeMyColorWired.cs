@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using EMP.Wire;
+using UnityEngine;
 
 public class ChangeMyColorWired : MonoBehaviour {
 

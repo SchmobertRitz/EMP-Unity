@@ -1,21 +1,24 @@
 ﻿using System;
 
-public abstract class AbstractBinding : IBinding
+namespace EMP.Wire
 {
-    protected Wire wire;
-
-    public Type BoundType
-    { get; private set; }
-
-    public string BoundName
-    { get; private set; }
-
-    public AbstractBinding(Wire wire, string name, Type type)
+    public abstract class AbstractBinding : IBinding
     {
-        this.wire = wire;
-        BoundName = name;
-        BoundType = type;
-    }
+        protected Wire wire;
 
-    public abstract object GetInstance();
+        public Type BoundType
+        { get; private set; }
+
+        public string BoundName
+        { get; private set; }
+
+        public AbstractBinding(Wire wire, string name, Type type)
+        {
+            this.wire = wire;
+            BoundName = name;
+            BoundType = type;
+        }
+
+        public abstract object GetInstance();
+    }
 }

@@ -1,27 +1,29 @@
 ﻿using System;
-
-public class SingletonBindingDecorator : IBinding
+namespace EMP.Wire
 {
-    private object instance;
-    private IBinding delegateBinding;
-
-    public Type BoundType
-    { get { return delegateBinding.BoundType; } }
-
-    public string BoundName
-    { get { return delegateBinding.BoundName; } }
-
-    public SingletonBindingDecorator(IBinding delegateBinding)
+    public class SingletonBindingDecorator : IBinding
     {
-        this.delegateBinding = delegateBinding;
-    }
+        private object instance;
+        private IBinding delegateBinding;
 
-    public object GetInstance()
-    {
-        if (instance == null)
+        public Type BoundType
+        { get { return delegateBinding.BoundType; } }
+
+        public string BoundName
+        { get { return delegateBinding.BoundName; } }
+
+        public SingletonBindingDecorator(IBinding delegateBinding)
         {
-            instance = delegateBinding.GetInstance();
+            this.delegateBinding = delegateBinding;
         }
-        return instance;
+
+        public object GetInstance()
+        {
+            if (instance == null)
+            {
+                instance = delegateBinding.GetInstance();
+            }
+            return instance;
+        }
     }
 }

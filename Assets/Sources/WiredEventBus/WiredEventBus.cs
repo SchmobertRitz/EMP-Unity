@@ -1,4 +1,7 @@
-﻿[Singleton]
+﻿using EMP.EventBus;
+using EMP.Wire;
+
+[Singleton]
 public class WiredEventBus {
 
     public void Post(object eventObject, string busName) {

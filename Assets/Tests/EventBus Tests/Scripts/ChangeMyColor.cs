@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using EMP.EventBus;
+using UnityEngine;
 
 public class ChangeMyColor : MonoBehaviour {
 

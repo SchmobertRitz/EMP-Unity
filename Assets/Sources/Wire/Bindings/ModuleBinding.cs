@@ -2,93 +2,96 @@
 using System.Reflection;
 using UnityEngine;
 
-public class ModuleBinding : AbstractBinding
+namespace EMP.Wire
 {
-    private MethodInfo methodInfo;
-    private object module;
-
-    public ModuleBinding(Wire wire, string name, Type type, MethodInfo methodInfo, object module)
-        : base(wire, name, type)
+    public class ModuleBinding : AbstractBinding
     {
-        this.methodInfo = methodInfo;
-        this.module = module;
-    }
+        private MethodInfo methodInfo;
+        private object module;
 
-    public override object GetInstance()
-    {
-        object instance = InvokationHelper.ResolveParametersAndInvokeMethod(wire, methodInfo, module);
-        GameObjectAttribute gameObjectAttribute;
-        if (instance is Type && TypeHelper.TryToGetAttribute(methodInfo, out gameObjectAttribute))
+        public ModuleBinding(Wire wire, string name, Type type, MethodInfo methodInfo, object module)
+            : base(wire, name, type)
         {
-            return Instantiate((Type)instance, gameObjectAttribute);
+            this.methodInfo = methodInfo;
+            this.module = module;
         }
-        else if (instance is UnityEngine.Object && TypeHelper.TryToGetAttribute(methodInfo, out gameObjectAttribute))
-        {
-            return Instantiate((UnityEngine.Object)instance, gameObjectAttribute);
-        }
-        else
-        {
-            return instance;
-        }
-    }
 
-    private object Instantiate(Type componentType, GameObjectAttribute gameObjectAttribute)
-    {
-        string gameObjectName;
-        if (gameObjectAttribute.name == null)
+        public override object GetInstance()
         {
-            gameObjectName = componentType.Name + (BoundName == null ? "" : "_" + BoundName);
-            int c = 1;
-            while (UnityEngine.GameObject.Find("/" + gameObjectName) != null)
+            object instance = InvokationHelper.ResolveParametersAndInvokeMethod(wire, methodInfo, module);
+            GameObjectAttribute gameObjectAttribute;
+            if (instance is Type && TypeHelper.TryToGetAttribute(methodInfo, out gameObjectAttribute))
             {
-                gameObjectName = componentType.Name + (BoundName == null ? "" : "_" + BoundName) + "(" + (c++) + ")";
+                return Instantiate((Type)instance, gameObjectAttribute);
             }
-        }
-        else
-        {
-            gameObjectName = gameObjectAttribute.name;
-        }
-        UnityEngine.GameObject instance = new UnityEngine.GameObject(gameObjectName);
-        return instance.AddComponent(componentType);
-    }
-
-    private object Instantiate(UnityEngine.Object unityObject, GameObjectAttribute gameObjectAttribute)
-    {
-        string gameObjectName;
-        if (gameObjectAttribute.name == null)
-        {
-            gameObjectName = BoundType.Name + (BoundName == null ? "" : "_" + BoundName);
-            int c = 1;
-            while (UnityEngine.GameObject.Find("/" + gameObjectName) != null)
+            else if (instance is UnityEngine.Object && TypeHelper.TryToGetAttribute(methodInfo, out gameObjectAttribute))
             {
-                gameObjectName = BoundType.Name + (BoundName == null ? "" : "_" + BoundName) + "(" + (c++) + ")";
+                return Instantiate((UnityEngine.Object)instance, gameObjectAttribute);
             }
-        }
-        else
-        {
-            gameObjectName = gameObjectAttribute.name;
-        }
-        //UnityEngine.GameObject instanceParent = new UnityEngine.GameObject(gameObjectName);
-        GameObject instance = GameObject.Instantiate(unityObject as GameObject /*, instanceParent.transform*/) as GameObject;
-        instance.name = gameObjectName;
-
-        foreach (MonoBehaviour monoBehaviour in instance.GetComponentsInChildren<MonoBehaviour>())
-        {
-            if (monoBehaviour != null)
+            else
             {
-                wire.Inject(monoBehaviour);
+                return instance;
             }
         }
 
-        /* if (type.IsAssignableFrom(typeof(Component)))
+        private object Instantiate(Type componentType, GameObjectAttribute gameObjectAttribute)
         {
-            return instance.GetComponent(type);
-        } else*/
-        if (BoundType.IsAssignableFrom(typeof(GameObject)))
-        {
-            return instance;
+            string gameObjectName;
+            if (gameObjectAttribute.name == null)
+            {
+                gameObjectName = componentType.Name + (BoundName == null ? "" : "_" + BoundName);
+                int c = 1;
+                while (UnityEngine.GameObject.Find("/" + gameObjectName) != null)
+                {
+                    gameObjectName = componentType.Name + (BoundName == null ? "" : "_" + BoundName) + "(" + (c++) + ")";
+                }
+            }
+            else
+            {
+                gameObjectName = gameObjectAttribute.name;
+            }
+            UnityEngine.GameObject instance = new UnityEngine.GameObject(gameObjectName);
+            return instance.AddComponent(componentType);
         }
-        return instance.GetComponent(BoundType);
-        //throw new Exception("Unexpected binding type " + type);
+
+        private object Instantiate(UnityEngine.Object unityObject, GameObjectAttribute gameObjectAttribute)
+        {
+            string gameObjectName;
+            if (gameObjectAttribute.name == null)
+            {
+                gameObjectName = BoundType.Name + (BoundName == null ? "" : "_" + BoundName);
+                int c = 1;
+                while (UnityEngine.GameObject.Find("/" + gameObjectName) != null)
+                {
+                    gameObjectName = BoundType.Name + (BoundName == null ? "" : "_" + BoundName) + "(" + (c++) + ")";
+                }
+            }
+            else
+            {
+                gameObjectName = gameObjectAttribute.name;
+            }
+            //UnityEngine.GameObject instanceParent = new UnityEngine.GameObject(gameObjectName);
+            GameObject instance = GameObject.Instantiate(unityObject as GameObject /*, instanceParent.transform*/) as GameObject;
+            instance.name = gameObjectName;
+
+            foreach (MonoBehaviour monoBehaviour in instance.GetComponentsInChildren<MonoBehaviour>())
+            {
+                if (monoBehaviour != null)
+                {
+                    wire.Inject(monoBehaviour);
+                }
+            }
+
+            /* if (type.IsAssignableFrom(typeof(Component)))
+            {
+                return instance.GetComponent(type);
+            } else*/
+            if (BoundType.IsAssignableFrom(typeof(GameObject)))
+            {
+                return instance;
+            }
+            return instance.GetComponent(BoundType);
+            //throw new Exception("Unexpected binding type " + type);
+        }
     }
 }

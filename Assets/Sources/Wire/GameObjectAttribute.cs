@@ -1,13 +1,18 @@
 ﻿using System;
 
-[AttributeUsage(AttributeTargets.Method)]
-public class GameObjectAttribute : Attribute {
-    public string name;
-
-    public GameObjectAttribute(string name)
+namespace EMP.Wire
+{
+    [AttributeUsage(AttributeTargets.Method)]
+    public class GameObjectAttribute : Attribute
     {
-        this.name = name;
-    }
+        public string name;
 
-    public GameObjectAttribute() : this(null) { }
+        public GameObjectAttribute(string name)
+        {
+            this.name = name;
+        }
+
+        public GameObjectAttribute() : this(null) { }
+    }
 }
+
