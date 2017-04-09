@@ -8,6 +8,8 @@ namespace EMP.Wire
     public class Wire
     {
 
+        private Dictionary<Type, List<MethodInfo>> injectionMethodCache = new Dictionary<Type, List<MethodInfo>>();
+        private Dictionary<Type, List<MemberInfo>> injectionMemberCache = new Dictionary<Type, List<MemberInfo>>();
         private Dictionary<string, IBinding> bindings = new Dictionary<string, IBinding>();
 
         public Wire()
@@ -171,12 +173,16 @@ namespace EMP.Wire
 
         private List<MethodInfo> FindInjectionMethods(object @object)
         {
-            List<MethodInfo> result = new List<MethodInfo>();
-            foreach (MethodInfo methodInfo in TypeHelper.AllMethodsOf(@object.GetType()))
+            List<MethodInfo> result = null;
+            if (!injectionMethodCache.TryGetValue(@object.GetType(), out result))
             {
-                if (TypeHelper.HasAttribute<InjectAttribute>(methodInfo))
+                result = new List<MethodInfo>();
+                foreach (MethodInfo methodInfo in TypeHelper.AllMethodsOf(@object.GetType()))
                 {
-                    result.Add(methodInfo);
+                    if (TypeHelper.HasAttribute<InjectAttribute>(methodInfo))
+                    {
+                        result.Add(methodInfo);
+                    }
                 }
             }
             return result;
@@ -184,13 +190,18 @@ namespace EMP.Wire
 
         private List<MemberInfo> FindInjectionMembers(object @object)
         {
-            List<MemberInfo> result = new List<MemberInfo>();
-            foreach (MemberInfo memberInfo in TypeHelper.AllMembersOf(@object.GetType()))
+            List<MemberInfo> result = null;
+            if (!injectionMemberCache.TryGetValue(@object.GetType(), out result))
             {
-                if (TypeHelper.HasAttribute<InjectAttribute>(memberInfo)
-                    || TypeHelper.HasAttribute<BindAttribute>(memberInfo))
+                result = new List<MemberInfo>();
+                injectionMemberCache[@object.GetType()] = result;
+                foreach (MemberInfo memberInfo in TypeHelper.AllMembersOf(@object.GetType()))
                 {
-                    result.Add(memberInfo);
+                    if (TypeHelper.HasAttribute<InjectAttribute>(memberInfo)
+                        || TypeHelper.HasAttribute<BindAttribute>(memberInfo))
+                    {
+                        result.Add(memberInfo);
+                    }
                 }
             }
             return result;
