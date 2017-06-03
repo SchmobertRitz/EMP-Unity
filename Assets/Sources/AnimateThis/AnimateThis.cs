@@ -1,24 +1,31 @@
 ﻿using UnityEngine;
-using System.Collections;
 using System.Collections.Generic;
 using System;
 
 namespace EMP.Animations
 {
-    public class AnimateThis : MonoBehaviour
+    public interface IAnimateThis
+    {
+        AnimateThis.TransformAnimationBuilder Transformate();
+        AnimateThis.ValueAnimationBuilder Do(Action<float> handler);
+        IAnimateThis CancelAll();
+        IAnimateThis Cancel(AnimateThis.Animation animation);
+    }
+
+    public class AnimateThis : MonoBehaviour, IAnimateThis
     {
 
-        public static AnimateThis With(MonoBehaviour obj)
+        public static IAnimateThis With(MonoBehaviour obj)
         {
             return CreateIfNull(obj.GetComponent<AnimateThis>(), obj.transform);
         }
 
-        public static AnimateThis With(Transform obj)
+        public static IAnimateThis With(Transform obj)
         {
             return CreateIfNull(obj.GetComponent<AnimateThis>(), obj);
         }
 
-        private static AnimateThis CreateIfNull(AnimateThis instance, Transform t)
+        private static IAnimateThis CreateIfNull(AnimateThis instance, Transform t)
         {
             if (instance != null)
             {
@@ -63,106 +70,167 @@ namespace EMP.Animations
         {
             return EaseInOutSinus(t);
         }
-
-        public interface Animatable
+        
+        public interface IAnimatable
         {
             void DoAnimFrame(float t);
+            void DoEndAnim();
+            void DoStartAnim();
         }
 
-        public class TransformAnimatable : Animatable
+        internal class TransformAnimatable : IAnimatable
         {
             public Transform transform;
-            public Vector3 posFrom, posTo;
-            public Vector3 scaleFrom, scaleTo;
-            public Quaternion rotFrom, rotTo;
+            public Vector3? posFrom, posTo;
+            public Vector3? scaleFrom, scaleTo;
+            public Quaternion? rotFrom, rotTo;
 
             public TransformAnimatable(Transform transform)
             {
                 this.transform = transform;
-                posFrom = posTo = transform.localPosition;
-                scaleFrom = scaleTo = transform.localScale;
-                rotFrom = rotTo = transform.rotation;
             }
 
             public void DoAnimFrame(float t)
             {
-                if (posFrom != posTo)
+                if (posFrom != null && posTo != null)
                 {
-                    transform.localPosition = Vector3.LerpUnclamped(posFrom, posTo, t);
+                    transform.localPosition = Vector3.LerpUnclamped(posFrom ?? Vector3.zero, posTo ?? Vector3.zero, t);
                 }
-                if (scaleFrom != scaleTo)
+                if (scaleFrom != null && scaleTo != null)
                 {
-                    transform.localScale = Vector3.LerpUnclamped(scaleFrom, scaleTo, t);
+                    transform.localScale = Vector3.LerpUnclamped(scaleFrom ?? Vector3.zero, scaleTo ?? Vector3.zero, t);
                 }
-                if (rotFrom != rotTo)
+                if (rotFrom != null && rotTo != null)
                 {
-                    transform.localRotation = Quaternion.LerpUnclamped(rotFrom, rotTo, t);
-                }
-            }
-
-            public void DoEndAnim(Animation a)
-            {
-                if (posFrom != posTo)
-                {
-                    transform.localPosition = posTo;
-                }
-                if (scaleFrom != scaleTo)
-                {
-                    transform.localScale = scaleTo;
-                }
-                if (rotFrom != rotTo)
-                {
-                    transform.localRotation = rotTo;
+                    transform.localRotation = Quaternion.LerpUnclamped(rotFrom ?? Quaternion.identity, rotTo ?? Quaternion.identity, t);
                 }
             }
 
-            public void DoInitAnim(Animation a)
+            public void DoEndAnim()
             {
+                if (posFrom != null && posTo != null)
+                {
+                    transform.localPosition = posTo ?? Vector3.zero;
+                }
+                if (scaleFrom != null && scaleTo != null)
+                {
+                    transform.localScale = scaleTo ?? Vector3.zero;
+                }
+                if (rotFrom != null && rotTo != null)
+                {
+                    transform.localRotation = rotTo ?? Quaternion.identity;
+                }
             }
 
-            public void DoStartAnim(Animation a)
+            public void DoStartAnim()
             {
-                if (posFrom != posTo)
+                if (posFrom == null)
                 {
-                    transform.localPosition = posFrom;
+                    posFrom = transform.localPosition;
                 }
-                if (scaleFrom != scaleTo)
+                if (scaleFrom == null)
                 {
-                    transform.localScale = scaleFrom;
+                    scaleFrom = transform.localScale;
                 }
-                if (rotFrom != rotTo)
+                if (rotFrom == null)
                 {
-                    transform.localRotation = rotFrom;
+                    rotFrom = transform.localRotation;
+                }
+                if (posFrom != null && posTo != null)
+                {
+                    transform.localPosition = posFrom ?? Vector3.zero;
+                }
+                if (scaleFrom != null && scaleTo != null)
+                {
+                    transform.localScale = scaleFrom ?? Vector3.zero;
+                }
+                if (rotFrom != null && rotTo != null)
+                {
+                    transform.localRotation = rotFrom ?? Quaternion.identity;
                 }
             }
         }
 
         public class Animation
         {
-            public Animatable animatable;
+            internal IAnimatable animatable;
             public delegate float EaseFunction(float t);
-            public EaseFunction easeFunction;
-            public float timeStart;
-            public float timeStop;
-            public Action onAnimationStart;
-            public Action onAnimationEnd;
-            public Action onAnimationCancelled;
-            public bool isPlaying;
-            public bool isCanceled;
+            internal EaseFunction easeFunction;
+            internal float timeStart;
+            internal float timeStop;
+            internal Action onAnimationStart;
+            internal Action onAnimationEnd;
+            internal Action onAnimationCancelled;
+            internal bool isPlaying;
+            internal bool isCanceled;
         }
 
-        public abstract class AnimationBuilder<T> where T : AnimationBuilder<T>
+        public abstract class AnimationBuilder
         {
             protected AnimateThis animator;
-            protected Animatable animatable;
-            private float startDelay = 0;
-            private float duration = 1;
-            private Animation.EaseFunction easeFunction;
-            private Action onAnimationStartAction;
-            private Action onAnimationEndAction;
-            private Action onAnimationCancelledAction;
+            protected IAnimatable animatable;
+            internal float startDelay = 0;
+            internal float duration = 1;
+            internal Animation.EaseFunction easeFunction;
+            internal Action onAnimationStartAction;
+            internal Action onAnimationEndAction;
+            internal Action onAnimationCancelledAction;
+            internal AnimationBuilder delegateBuilder;
 
-            protected AnimationBuilder(AnimateThis animator, Animatable animatable)
+            public Animation Start()
+            {
+                if (delegateBuilder != null)
+                {
+                    return delegateBuilder.Start();
+                }
+                else
+                {
+                    return CreateAndStartAnimation();
+                }
+            }
+
+            internal Animation CreateAndStartAnimation()
+            {
+                Animation result = new Animation();
+                float t = Time.time;
+                result.animatable = animatable;
+                result.timeStart = t + startDelay;
+                result.timeStop = result.timeStart + duration;
+                result.easeFunction = easeFunction;
+                result.onAnimationStart = onAnimationStartAction;
+                result.onAnimationEnd = onAnimationEndAction;
+                result.onAnimationCancelled = onAnimationCancelledAction;
+
+                if (result.timeStart == result.timeStop)
+                {
+                    if (onAnimationStartAction != null)
+                    {
+                        onAnimationStartAction();
+                    }
+                    result.animatable.DoEndAnim();
+                    if (onAnimationEndAction != null)
+                    {
+                        onAnimationEndAction();
+                    }
+                }
+                else
+                {
+                    animator.Add(result);
+                }
+
+                return result;
+            }
+
+            public IAnimateThis Then()
+            {
+                IAnimateThis chainedAnimation = new AnimationChainer(animator, this);
+                return chainedAnimation;
+            }
+        }
+
+        public abstract class GenericAnimationBuilder<T> : AnimationBuilder where T : GenericAnimationBuilder<T>
+        {
+            protected GenericAnimationBuilder(AnimateThis animator, IAnimatable animatable)
             {
                 this.animator = animator;
                 this.animatable = animatable;
@@ -188,36 +256,75 @@ namespace EMP.Animations
 
             public T OnStart(Action onStartDelegate)
             {
-                this.onAnimationStartAction = onStartDelegate;
+                onAnimationStartAction = onStartDelegate;
                 return (T)this;
             }
 
             public T OnEnd(Action onEndDelegate)
             {
-                this.onAnimationEndAction = onEndDelegate;
+                onAnimationEndAction = onEndDelegate;
                 return (T)this;
             }
 
-            public Animation Start()
+        }
+
+        private class AnimationChainer : IAnimateThis
+        {
+            private readonly IAnimateThis delegateInstance;
+            private readonly AnimationBuilder delegateBuilder;
+
+            public AnimationChainer(IAnimateThis delegateInstance, AnimationBuilder delegateBuilder)
             {
-                Animation result = new Animation();
-                float t = Time.time;
-                result.animatable = animatable;
-                result.timeStart = t + startDelay;
-                result.timeStop = result.timeStart + duration;
-                result.easeFunction = easeFunction;
-                result.onAnimationStart = onAnimationStartAction;
-                result.onAnimationEnd = onAnimationEndAction;
-                result.onAnimationCancelled = onAnimationCancelledAction;
-                animator.Add(result);
-                return result;
+                this.delegateInstance = delegateInstance;
+                this.delegateBuilder = delegateBuilder;
+            }
+
+            public IAnimateThis Cancel(Animation animation)
+            {
+                delegateInstance.Cancel(animation);
+                return this;
+            }
+
+            public IAnimateThis CancelAll()
+            {
+                delegateInstance.CancelAll();
+                return this;
+            }
+
+            public ValueAnimationBuilder Do(Action<float> handler)
+            {
+                ValueAnimationBuilder builder = delegateInstance.Do(handler);
+                LinkBuilders(builder);
+                return builder;
+            }
+
+            public TransformAnimationBuilder Transformate()
+            {
+                TransformAnimationBuilder builder = delegateInstance.Transformate();
+                LinkBuilders(builder);
+                return builder;
+            }
+
+            private void LinkBuilders(AnimationBuilder builder)
+            {
+                builder.delegateBuilder = delegateBuilder;
+                Action startNextAnbimationAction = () => { builder.CreateAndStartAnimation(); };
+                if (delegateBuilder.onAnimationEndAction != null)
+                {
+                    Action oldAction = delegateBuilder.onAnimationEndAction;
+                    delegateBuilder.onAnimationEndAction = () => { oldAction(); builder.CreateAndStartAnimation(); };
+                }
+                else
+                {
+                    delegateBuilder.onAnimationEndAction = () => { builder.CreateAndStartAnimation(); };
+                }
             }
         }
 
-        public class TransformAnimationBuilder : AnimationBuilder<TransformAnimationBuilder>
+        public class TransformAnimationBuilder : GenericAnimationBuilder<TransformAnimationBuilder>
         {
-            private TransformAnimatable transformAnimatable;
-            public TransformAnimationBuilder(AnimateThis animator, TransformAnimatable animatable) : base(animator, animatable)
+            TransformAnimatable transformAnimatable;
+            internal TransformAnimationBuilder(AnimateThis animator, TransformAnimatable animatable) : base(animator, animatable)
             {
                 this.transformAnimatable = animatable;
             }
@@ -267,10 +374,9 @@ namespace EMP.Animations
                 transformAnimatable.scaleFrom = scaleFrom;
                 return this;
             }
-
         }
 
-        public class ValueAnimatable : Animatable
+        public class ValueAnimatable : IAnimatable
         {
             public float valueStart = 0, valueEnd = 1;
             private Action<float> handler;
@@ -284,15 +390,25 @@ namespace EMP.Animations
             {
                 handler.Invoke(valueStart * (1 - t) + t * valueEnd);
             }
+
+            public void DoEndAnim()
+            {
+                handler.Invoke(valueEnd);
+            }
+
+            public void DoStartAnim()
+            {
+                handler.Invoke(valueStart);
+            }
         }
 
-        public class ValueAnimationBuilder : AnimationBuilder<ValueAnimationBuilder>
+        public class ValueAnimationBuilder : GenericAnimationBuilder<ValueAnimationBuilder>
         {
 
             private ValueAnimatable valueAnimatable;
             public ValueAnimationBuilder(AnimateThis animator, ValueAnimatable animatable) : base(animator, animatable)
             {
-                this.valueAnimatable = animatable;
+                valueAnimatable = animatable;
             }
 
             public ValueAnimationBuilder From(float value)
@@ -310,9 +426,15 @@ namespace EMP.Animations
 
         private List<Animation> animations = new List<Animation>();
 
-        public AnimateThis CancelAll()
+        public IAnimateThis CancelAll()
         {
             animations.Clear();
+            return this;
+        }
+
+        public IAnimateThis Cancel(Animation animation)
+        {
+            animations.Remove(animation);
             return this;
         }
 
@@ -326,7 +448,7 @@ namespace EMP.Animations
             return new ValueAnimationBuilder(this, new ValueAnimatable(handler));
         }
 
-        public void Add(Animation a)
+        private void Add(Animation a)
         {
             animations.Add(a);
         }
@@ -334,7 +456,6 @@ namespace EMP.Animations
         void Update()
         {
             float t = Time.time;
-
             for (int i = animations.Count - 1; i >= 0; i--)
             {
                 Animation a = animations[i];
@@ -349,7 +470,7 @@ namespace EMP.Animations
                 else if (t >= a.timeStop)
                 {
                     animations.RemoveAt(i);
-                    a.animatable.DoAnimFrame(1);
+                    a.animatable.DoEndAnim();
                     if (a.onAnimationEnd != null)
                     {
                         a.onAnimationEnd();
@@ -359,6 +480,7 @@ namespace EMP.Animations
                 {
                     if (!a.isPlaying)
                     {
+                        a.animatable.DoStartAnim();
                         if (a.onAnimationStart != null)
                         {
                             a.onAnimationStart();
@@ -376,6 +498,10 @@ namespace EMP.Animations
                     }
 
                 }
+            }
+            if (animations.Count == 0)
+            {
+                Destroy(this);
             }
         }
     }
