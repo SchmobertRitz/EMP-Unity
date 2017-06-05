@@ -6,8 +6,9 @@ namespace EMP.Animations
 {
     public interface IAnimateThis
     {
-        AnimateThis.TransformAnimationBuilder Transformate();
-        AnimateThis.ValueAnimationBuilder Do(Action<float> handler);
+        AnimateThis.TransformAnimationBuilder Transform();
+        AnimateThis.ValueAnimationBuilder Value(Action<float> handler);
+        AnimateThis.AudioAnimationBuilder Audio();
         IAnimateThis CancelAll();
         IAnimateThis Cancel(AnimateThis.Animation animation);
     }
@@ -78,14 +79,96 @@ namespace EMP.Animations
             void DoStartAnim();
         }
 
+        internal class AudioAnimatable : IAnimatable
+        {
+            internal AudioSource audioSource;
+            internal float? volumeFrom, volumeTo;
+            internal float? panFrom, panTo;
+            internal float? spatialFrom, spatialTo;
+
+            internal AudioAnimatable(AudioSource audioSource)
+            {
+                this.audioSource = audioSource;
+            }
+
+            public void DoAnimFrame(float t)
+            {
+                if (audioSource != null)
+                {
+                    if (volumeFrom != null && volumeTo != null)
+                    {
+                        audioSource.volume = (volumeFrom ?? 0) * (1 - t) + (volumeTo ?? 0) * t;
+                    }
+                    if (panFrom != null && panTo != null)
+                    {
+                        audioSource.panStereo = (panFrom ?? 0) * (1 - t) + (panTo ?? 0) * t;
+                    }
+                    if (spatialFrom != null && spatialTo != null)
+                    {
+                        audioSource.spatialBlend = (spatialFrom ?? 0) * (1 - t) + (spatialTo ?? 0) * t;
+                    }
+                }
+            }
+
+            public void DoEndAnim()
+            {
+                if (audioSource != null)
+                {
+                    if (volumeFrom != null && volumeTo != null)
+                    {
+                        audioSource.volume = volumeTo ?? 0;
+                    }
+                    if (panFrom != null && panTo != null)
+                    {
+                        audioSource.panStereo = panTo ?? 0;
+                    }
+                    if (spatialFrom != null && spatialTo != null)
+                    {
+                        audioSource.spatialBlend = spatialTo ?? 0;
+                    }
+                }
+            }
+
+            public void DoStartAnim()
+            {
+                if (audioSource != null)
+                {
+                    if (volumeFrom == null)
+                    {
+                        volumeFrom = audioSource.volume;
+                    }
+                    if (panFrom == null)
+                    {
+                        panFrom = audioSource.panStereo;
+                    }
+                    if (spatialFrom == null)
+                    {
+                        spatialFrom = audioSource.spatialBlend;
+                    }
+                    if (volumeFrom != null && volumeTo != null)
+                    {
+                        audioSource.volume = volumeFrom ?? 0;
+                    }
+                    if (panFrom != null && panTo != null)
+                    {
+                        audioSource.panStereo = panFrom ?? 0;
+                    }
+                    if (spatialFrom != null && spatialTo != null)
+                    {
+                        audioSource.spatialBlend = spatialFrom ?? 0;
+                    }
+                }
+            }
+        }
+
         internal class TransformAnimatable : IAnimatable
         {
-            public Transform transform;
-            public Vector3? posFrom, posTo;
-            public Vector3? scaleFrom, scaleTo;
-            public Quaternion? rotFrom, rotTo;
+            internal Transform transform;
+            internal Vector3? posFrom, posTo;
+            internal Vector3? scaleFrom, scaleTo;
+            internal Quaternion? rotFrom, rotTo;
 
-            public TransformAnimatable(Transform transform)
+            internal TransformAnimatable(Transform transform)
             {
                 this.transform = transform;
             }
@@ -154,8 +237,7 @@ namespace EMP.Animations
         public class Animation
         {
             internal IAnimatable animatable;
-            public delegate float EaseFunction(float t);
-            internal EaseFunction easeFunction;
+            internal Func<float, float> easeFunction;
             internal float timeStart;
             internal float timeStop;
             internal Action onAnimationStart;
@@ -165,13 +247,17 @@ namespace EMP.Animations
             internal bool isCanceled;
         }
 
+        public class InvalidAnimation : Animation
+        {
+        }
+
         public abstract class AnimationBuilder
         {
             protected AnimateThis animator;
             protected IAnimatable animatable;
             internal float startDelay = 0;
             internal float duration = 1;
-            internal Animation.EaseFunction easeFunction;
+            internal Func<float, float> easeFunction;
             internal Action onAnimationStartAction;
             internal Action onAnimationEndAction;
             internal Action onAnimationCancelledAction;
@@ -248,7 +334,7 @@ namespace EMP.Animations
                 return (T)this;
             }
 
-            public T Ease(Animation.EaseFunction easeFunction)
+            public T Ease(Func<float, float> easeFunction)
             {
                 this.easeFunction = easeFunction;
                 return (T)this;
@@ -291,16 +377,23 @@ namespace EMP.Animations
                 return this;
             }
 
-            public ValueAnimationBuilder Do(Action<float> handler)
+            public ValueAnimationBuilder Value(Action<float> handler)
             {
-                ValueAnimationBuilder builder = delegateInstance.Do(handler);
+                ValueAnimationBuilder builder = delegateInstance.Value(handler);
                 LinkBuilders(builder);
                 return builder;
             }
 
-            public TransformAnimationBuilder Transformate()
+            public TransformAnimationBuilder Transform()
             {
-                TransformAnimationBuilder builder = delegateInstance.Transformate();
+                TransformAnimationBuilder builder = delegateInstance.Transform();
+                LinkBuilders(builder);
+                return builder;
+            }
+
+            public AudioAnimationBuilder Audio()
+            {
+                AudioAnimationBuilder builder = delegateInstance.Audio();
                 LinkBuilders(builder);
                 return builder;
             }
@@ -321,12 +414,58 @@ namespace EMP.Animations
             }
         }
 
+        public class AudioAnimationBuilder : GenericAnimationBuilder<AudioAnimationBuilder>
+        {
+            private AudioAnimatable audioAnimatable;
+
+            internal AudioAnimationBuilder(AnimateThis animator, AudioAnimatable animatable) : base(animator, animatable)
+            {
+                audioAnimatable = animatable;
+            }
+
+            public AudioAnimationBuilder FromVolume(float fromVolume)
+            {
+                audioAnimatable.volumeFrom = fromVolume;
+                return this;
+            }
+
+            public AudioAnimationBuilder ToVolume(float toVolume)
+            {
+                audioAnimatable.volumeTo = toVolume;
+                return this;
+            }
+
+            public AudioAnimationBuilder FromPan(float fromPan)
+            {
+                audioAnimatable.panFrom = fromPan;
+                return this;
+            }
+
+            public AudioAnimationBuilder ToPan(float toPan)
+            {
+                audioAnimatable.panTo = toPan;
+                return this;
+            }
+
+            public AudioAnimationBuilder FromSpatial(float fromSpatial)
+            {
+                audioAnimatable.spatialFrom = fromSpatial;
+                return this;
+            }
+
+            public AudioAnimationBuilder ToSpatial(float toSpatial)
+            {
+                audioAnimatable.spatialTo = toSpatial;
+                return this;
+            }
+        }
+
         public class TransformAnimationBuilder : GenericAnimationBuilder<TransformAnimationBuilder>
         {
-            TransformAnimatable transformAnimatable;
+            private TransformAnimatable transformAnimatable;
             internal TransformAnimationBuilder(AnimateThis animator, TransformAnimatable animatable) : base(animator, animatable)
             {
-                this.transformAnimatable = animatable;
+                transformAnimatable = animatable;
             }
 
             public TransformAnimationBuilder ToPosition(Vector3 posTo)
@@ -404,7 +543,6 @@ namespace EMP.Animations
 
         public class ValueAnimationBuilder : GenericAnimationBuilder<ValueAnimationBuilder>
         {
-
             private ValueAnimatable valueAnimatable;
             public ValueAnimationBuilder(AnimateThis animator, ValueAnimatable animatable) : base(animator, animatable)
             {
@@ -438,14 +576,19 @@ namespace EMP.Animations
             return this;
         }
 
-        public TransformAnimationBuilder Transformate()
+        public TransformAnimationBuilder Transform()
         {
             return new TransformAnimationBuilder(this, new TransformAnimatable(transform));
         }
 
-        public ValueAnimationBuilder Do(Action<float> handler)
+        public ValueAnimationBuilder Value(Action<float> handler)
         {
             return new ValueAnimationBuilder(this, new ValueAnimatable(handler));
+        }
+
+        public AudioAnimationBuilder Audio()
+        {
+            return new AudioAnimationBuilder(this, new AudioAnimatable(GetComponent<AudioSource>()));
         }
 
         private void Add(Animation a)
