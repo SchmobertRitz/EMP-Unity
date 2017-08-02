@@ -7,7 +7,7 @@ namespace EMP.Form
 {
     public class Form : Linear
     {
-        public Form()
+        public Form(EOrientation orientation = EOrientation.Vertical) : base(orientation)
         {
         }
 
@@ -64,25 +64,42 @@ namespace EMP.Form
         }
     }
 
-    public abstract class ViewGroup : View
+    public abstract class ViewGroup<T> : View
+        where T : ViewGroup<T>
     {
         protected List<View> views = new List<View>();
 
-        public virtual void Add(View view)
+        public virtual T Add(View view)
         {
             views.Add(view);
             Dirty = true;
+            return (T) this;
         }
 
-        public virtual void Remove(View view)
+        public virtual T Remove(View view)
         {
             views.Remove(view);
             Dirty = true;
+            return (T) this;
         }
     }
 
-    public class Linear : ViewGroup
+    public class Linear : ViewGroup<Linear>
     {
+        public static Linear Horizontal(params View[] views)
+        {
+            Linear result = new Linear(EOrientation.Horizontal);
+            Array.ForEach(views, v => result.Add(v));
+            return result;
+        }
+
+        public static Linear Vertical(params View[] views)
+        {
+            Linear result = new Linear(EOrientation.Vertical);
+            Array.ForEach(views, v => result.Add(v));
+            return result;
+        }
+
         public float Spacing { get; set; }
 
         protected List<float> weights = new List<float>();
@@ -91,30 +108,31 @@ namespace EMP.Form
             Horizontal, Vertical
         }
 
-        public EOrientation Orientation = EOrientation.Horizontal;
+        public EOrientation Orientation;
 
-        public Linear(EOrientation orientation = EOrientation.Horizontal)
+        public Linear(EOrientation orientation = EOrientation.Vertical)
         {
             Orientation = orientation;
         }
 
-        public override void Add(View view)
+        public override Linear Add(View view)
         {
-            Add(view, 1);
+            return Add(view, 1);
         }
 
-        public override void Remove(View view)
+        public override Linear Remove(View view)
         {
-            Remove(view, 1);
+            return Remove(view, 1);
         }
 
-        public void Add(View view, float weight)
+        public Linear Add(View view, float weight)
         {
             views.Add(view);
             weights.Add(weight);
+            return this;
         }
 
-        public void Remove(View view, float weight)
+        public Linear Remove(View view, float weight)
         {
             int index = views.IndexOf(view);
             if (index >= 0)
@@ -122,6 +140,7 @@ namespace EMP.Form
                 views.RemoveAt(index);
                 weights.RemoveAt(index);
             }
+            return this;
         }
 
         public override void Layout(Rect rect)
@@ -222,9 +241,8 @@ namespace EMP.Form
     public class TextField : View
     {
         public string Text { get; set; }
-        public Action<Button> Action { get; set; }
 
-        public TextField(string text)
+        public TextField(string text = "")
         {
             Text = text;
         }
@@ -232,6 +250,23 @@ namespace EMP.Form
         public override void Draw()
         {
             Text = GUI.TextField(Rect, Text);
+        }
+    }
+
+    public class Toggle : View
+    {
+        public bool Checked { get; set; }
+        public string Text { get; set; }
+
+        public Toggle(bool isChecked, string text = "")
+        {
+            Checked = isChecked;
+            Text = text;
+        }
+
+        public override void Draw()
+        {
+            Checked = GUI.Toggle(Rect, Checked, Text);
         }
     }
 }
