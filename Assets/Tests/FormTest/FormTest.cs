@@ -9,10 +9,11 @@ public class FormTest : MonoBehaviour {
 
 	void Start () {
         form = new Form();
+        form.Spacing = 5;
         Linear l1 = new Linear(Linear.EOrientation.Vertical);
-        Button a1 = new Button("A1");
-        a1.FixedHeight = 100;
-        l1.Add(a1);
+        l1.Spacing = 5;
+        
+        l1.Add(new Button("A1"));
         l1.Add(new Button("A2"));
         l1.Add(new Button("A3"));
         l1.FixedWidth = 100;
@@ -26,7 +27,7 @@ public class FormTest : MonoBehaviour {
 
     void OnGUI()
     {
-        Rect rect = new Rect(0, 0, Screen.width, Screen.height);
+        Rect rect = new Rect(0, 0, Screen.width/2, Screen.height / 2);
         form.OnGUI(rect);
     }
 

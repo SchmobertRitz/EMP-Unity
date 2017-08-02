@@ -20,8 +20,18 @@ namespace EMP.Form
 
     public class View
     {
-        public struct Inset
+        public class Inset
         {
+            public static Inset Border(float width)
+            {
+                return new View.Inset()
+                {
+                    top = width,
+                    right = width,
+                    bottom = width,
+                    left = width
+                };
+            }
             public float top, right, bottom, left;
         }
 
@@ -30,10 +40,7 @@ namespace EMP.Form
             Visible, Invisible, Hidden
         }
 
-
         protected bool Dirty { get; set; }
-        public Inset Padding { get; set; }
-        public Inset Margin { get; set; }
         public bool Enabled { get; set; }
         public EVisibility Visibility { get; set; }
         public Rect Rect { get; set; }
@@ -76,6 +83,8 @@ namespace EMP.Form
 
     public class Linear : ViewGroup
     {
+        public float Spacing { get; set; }
+
         protected List<float> weights = new List<float>();
         public enum EOrientation
         {
@@ -135,29 +144,37 @@ namespace EMP.Form
             }
         }
 
-        private void HelpLayouting(Func<float> extendFunction, Func<View, float?> fixedExtendFunction, Func<float, float, Rect> rectFunction)
+        private void HelpLayouting(
+            Func<float> extendFunction,
+            Func<View, float?> fixedExtend,
+            Func<float, float, Rect> rect
+        )
         {
             float weightSum = 0;
             weights.ForEach(w => weightSum += w);
 
-            float fixedValues = 0;
-            views.FindAll(v => fixedExtendFunction(v) != null)
-                .ForEach(v =>
+            float reservedSpace = Spacing * (views.Count - 1);
+
+            views.ForEach(v =>
                 {
-                    weightSum -= weights[views.IndexOf(v)];
-                    fixedValues += fixedExtendFunction(v).Value;
+                    float? fixedExtends = fixedExtend(v);
+                    if (fixedExtends != null)
+                    {
+                        weightSum -= weights[views.IndexOf(v)];
+                        reservedSpace += fixedExtend(v).Value;
+                    }
                 });
 
-            float unitExtend = (extendFunction() - fixedValues) / weightSum;
+            float unitExtend = (extendFunction() - reservedSpace) / weightSum;
             float offset = 0;
             for (int i = 0; i < views.Count; i++)
             {
                 View v = views[i];
                 float w = weights[i];
-                float extendOfView = fixedExtendFunction(v) ?? unitExtend * w;
-                v.Rect = rectFunction(offset, extendOfView);
+                float extendOfView = fixedExtend(v) ?? unitExtend * w;
+                v.Rect = rect(offset, extendOfView);
                 v.Layout(v.Rect);
-                offset += extendOfView;
+                offset += extendOfView + Spacing;
             }
         }
 
