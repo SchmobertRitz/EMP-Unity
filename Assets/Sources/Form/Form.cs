@@ -117,52 +117,47 @@ namespace EMP.Form
 
         public override void Layout(Rect rect)
         {
-            float weightSum = 0;
-            weights.ForEach(w => weightSum += w);
-
             if (Orientation == EOrientation.Horizontal)
             {
-                float fixedWidths = 0;
-                views.FindAll(v => v.FixedWidth != null)
-                    .ForEach(v =>
-                    {
-                        weightSum -= weights[views.IndexOf(v)];
-                        fixedWidths += v.FixedWidth.Value;
-                    });
-
-                float unitWidth = (rect.width - fixedWidths) / weightSum;
-                float offset = 0;
-                for (int i = 0; i < views.Count; i++)
-                {
-                    View v = views[i];
-                    float w = weights[i];
-                    float width = v.FixedWidth ?? unitWidth * w;
-                    v.Rect = new Rect(rect.x + offset, rect.y, width, rect.height);
-                    v.Layout(v.Rect);
-                    offset += width;
-                }
+                HelpLayouting(
+                    () => rect.width,
+                    (v) => v.FixedWidth,
+                    (offset, width) => new Rect(rect.x + offset, rect.y, width, rect.height)
+                );
             }
             else
             {
-                float fixedHeights = 0;
-                views.FindAll(v => v.FixedHeight != null)
-                    .ForEach(v =>
-                    {
-                        weightSum -= weights[views.IndexOf(v)];
-                        fixedHeights += v.FixedHeight.Value;
-                    });
+                HelpLayouting(
+                    () => rect.height,
+                    (v) => v.FixedHeight,
+                    (offset, height) => new Rect(rect.x, rect.y + offset, rect.width, height)
+                );
+            }
+        }
 
-                float unitHeight = (rect.height - fixedHeights) / weightSum;
-                float offset = 0;
-                for (int i = 0; i < views.Count; i++)
+        private void HelpLayouting(Func<float> extendFunction, Func<View, float?> fixedExtendFunction, Func<float, float, Rect> rectFunction)
+        {
+            float weightSum = 0;
+            weights.ForEach(w => weightSum += w);
+
+            float fixedValues = 0;
+            views.FindAll(v => fixedExtendFunction(v) != null)
+                .ForEach(v =>
                 {
-                    View v = views[i];
-                    float w = weights[i];
-                    float height = v.FixedHeight ?? unitHeight * w;
-                    v.Rect = new Rect(rect.x, rect.y + offset, rect.width, height);
-                    v.Layout(v.Rect);
-                    offset += height;
-                }
+                    weightSum -= weights[views.IndexOf(v)];
+                    fixedValues += fixedExtendFunction(v).Value;
+                });
+
+            float unitExtend = (extendFunction() - fixedValues) / weightSum;
+            float offset = 0;
+            for (int i = 0; i < views.Count; i++)
+            {
+                View v = views[i];
+                float w = weights[i];
+                float extendOfView = fixedExtendFunction(v) ?? unitExtend * w;
+                v.Rect = rectFunction(offset, extendOfView);
+                v.Layout(v.Rect);
+                offset += extendOfView;
             }
         }
 
