@@ -20,6 +20,8 @@ namespace EMP.Form
 
     public class View
     {
+        public const float LineHeight = 24;
+
         public class Inset
         {
             public static Inset Border(float width)
@@ -44,13 +46,13 @@ namespace EMP.Form
         public bool Enabled { get; set; }
         public EVisibility Visibility { get; set; }
         public Rect Rect { get; set; }
-        public float? FixedWidth { get; set; }
-        public float? FixedHeight { get; set; }
+        public float? Width { get; set; }
+        public float? Height { get; set; }
 
         public View()
         {
-            FixedWidth = null;
-            FixedHeight = null;
+            Width = null;
+            Height = null;
         }
 
         public virtual void Layout(Rect rect)
@@ -149,16 +151,16 @@ namespace EMP.Form
             {
                 HelpLayouting(
                     () => rect.width,
-                    (v) => v.FixedWidth,
-                    (offset, width) => new Rect(rect.x + offset, rect.y, width, rect.height)
+                    (v) => v.Width,
+                    (offset, width, v) => new Rect(rect.x + offset, rect.y, width, Mathf.Min(v.Height ?? float.MaxValue, rect.height))
                 );
             }
             else
             {
                 HelpLayouting(
                     () => rect.height,
-                    (v) => v.FixedHeight,
-                    (offset, height) => new Rect(rect.x, rect.y + offset, rect.width, height)
+                    (v) => v.Height,
+                    (offset, height, v) => new Rect(rect.x, rect.y + offset, Mathf.Min(v.Width ?? float.MaxValue, rect.width), height)
                 );
             }
         }
@@ -166,7 +168,7 @@ namespace EMP.Form
         private void HelpLayouting(
             Func<float> extendFunction,
             Func<View, float?> fixedExtend,
-            Func<float, float, Rect> rect
+            Func<float, float, View, Rect> rect
         )
         {
             float weightSum = 0;
@@ -191,7 +193,7 @@ namespace EMP.Form
                 View v = views[i];
                 float w = weights[i];
                 float extendOfView = fixedExtend(v) ?? unitExtend * w;
-                v.Rect = rect(offset, extendOfView);
+                v.Rect = rect(offset, extendOfView, v);
                 v.Layout(v.Rect);
                 offset += extendOfView + Spacing;
             }
@@ -209,6 +211,7 @@ namespace EMP.Form
 
         public Label(string text)
         {
+            Height = LineHeight;
             Text = text;
         }
 
@@ -225,6 +228,7 @@ namespace EMP.Form
 
         public Button(string text, Action<Button> action = null)
         {
+            Height = LineHeight;
             Text = text;
             Action = action;
         }
@@ -244,6 +248,7 @@ namespace EMP.Form
 
         public TextField(string text = "")
         {
+            Height = LineHeight;
             Text = text;
         }
 
@@ -260,6 +265,7 @@ namespace EMP.Form
 
         public Toggle(bool isChecked, string text = "")
         {
+            Height = LineHeight;
             Checked = isChecked;
             Text = text;
         }
