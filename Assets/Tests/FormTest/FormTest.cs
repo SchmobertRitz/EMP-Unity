@@ -11,10 +11,9 @@ public class FormTest : MonoBehaviour {
         form = new Form();
         form.Spacing = 5;
         Label label = new Label("Name of Component:");
-        label.FixedWidth = 180;
         TextField textField = new TextField();
         Linear componentName = Linear.Horizontal().Add(label).Add(textField);
-        componentName.FixedHeight = 25;
+
         form.Add(componentName);
         form.Add(new Label("Generate following folders in component:"));
         form.Add(new Toggle(true, "Scripts"));
@@ -26,7 +25,7 @@ public class FormTest : MonoBehaviour {
 
     void OnGUI()
     {
-        Rect rect = new Rect(0, 0, Screen.width/2, 180);
+        Rect rect = new Rect(0, 0, Screen.width/2, 200);
         form.OnGUI(rect);
     }
 
