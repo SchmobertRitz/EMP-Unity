@@ -10,17 +10,46 @@ public class FormTest : MonoBehaviour {
 	void Start () {
         form = new Form();
         form.Spacing = 5;
-        Label label = new Label("Name of Component:");
-        TextField textField = new TextField();
-        Linear componentName = Linear.Horizontal().Add(label).Add(textField);
 
+        Label labelNamespace = new Label("Component Namespace:");
+        labelNamespace.Width = 150;
+        TextField txtNamespace = new TextField();
+        Linear componentNamespace = Linear.Horizontal().Add(labelNamespace).Add(txtNamespace);
+        componentNamespace.Height = 30;
+        form.Add(componentNamespace);
+
+        Label labelComponentName = new Label("Name of Component:");
+        labelComponentName.Width = 150;
+        TextField txtComponentName = new TextField();
+        Linear componentName = Linear.Horizontal().Add(labelComponentName).Add(txtComponentName);
+        componentName.Height = 30;
         form.Add(componentName);
+
         form.Add(new Label("Generate following folders in component:"));
-        form.Add(new Toggle(true, "Scripts"));
-        form.Add(new Toggle(true, "Meshes"));
-        form.Add(new Toggle(true, "Materials"));
-        form.Add(new Toggle(true, "Prefabs"));
-        form.Add(new Toggle(true, "Ressoures"));
+
+        Linear toggles = Linear.Horizontal();
+        Linear left = Linear.Vertical();
+        left.Width = 100;
+        left.Add(new Toggle(true, "Scripts"));
+        left.Add(new Toggle(true, "Meshes"));
+        left.Add(new Toggle(true, "Materials"));
+
+        Linear right = Linear.Vertical();
+        right.Width = 100;
+        right.Add(new Toggle(true, "Prefabs"));
+        right.Add(new Toggle(true, "Ressoures"));
+
+        toggles.Add(left).Add(right);
+        form.Add(toggles);
+
+        Linear buttonContainer = Linear.Horizontal();
+
+        form.Add(buttonContainer);
+
+        Button button = new Button("Ok", _ => { });
+        button.Width = 100;
+        buttonContainer.Add(new View()).Add(button);
+        form.Add(buttonContainer);
     }
 
     void OnGUI()
