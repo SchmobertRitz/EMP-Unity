@@ -53,18 +53,22 @@ namespace EMP.Editor
             form.Add(lyNamespace);
             form.Add(lyClassName);
             
-
             form.Add(tglHeaderComment = new Toggle(true, "Generate source code header comment"));
             form.Add(tglLogger = new Toggle(true, "Generate logger"));
 
             Linear lyButton = Linear.Horizontal();
-            Button button = new Button("Ok", _ => { });
+            Button button = new Button("Ok", ButtonClicked);
             button.Width = 100;
             lyButton.Add(new View()).Add(button);
             form.Add(lyButton);
 
-            txtClassName.Focus();
-        }  
+            form.RequestFocusForView = txtClassName;
+        }
+
+        private void ButtonClicked(Button b)
+        {
+            
+        }
     }
 
 }

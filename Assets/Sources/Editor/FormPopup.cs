@@ -25,6 +25,7 @@ namespace EMP.Editor {
             }
             else
             {
+                //GUI.skin.settings.cursorFlashSpeed = 1;
                 form.OnGUI(new Rect(10, 10, rect.width - 20, rect.height - 20));
             }
         }

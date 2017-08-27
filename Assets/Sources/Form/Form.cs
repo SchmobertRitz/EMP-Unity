@@ -7,6 +7,8 @@ namespace EMP.Forms
 {
     public class Form : Linear
     {
+        public View RequestFocusForView { get; set; }
+
         public Form(EOrientation orientation = EOrientation.Vertical) : base(orientation)
         {
         }
@@ -15,6 +17,11 @@ namespace EMP.Forms
         {
             Layout(rect);
             Draw();
+            if (RequestFocusForView != null)
+            {
+                GUI.FocusControl(RequestFocusForView.Name);
+                RequestFocusForView = null;
+            }
         }
     }
 
@@ -50,13 +57,13 @@ namespace EMP.Forms
         public float? Height { get; set; }
         public GUIStyle style { get; set; }
 
-        protected string name;
+        public string Name { get; set; }
 
         public View()
         {
             Width = null;
             Height = null;
-            name = Guid.NewGuid().ToString();
+            Name = Guid.NewGuid().ToString();
         }
 
         public virtual void Layout(Rect rect)
@@ -67,11 +74,6 @@ namespace EMP.Forms
         public virtual void Draw()
         {
             // Override
-        }
-
-        public void Focus()
-        {
-            GUI.FocusControl(name);
         }
     }
 
@@ -229,7 +231,7 @@ namespace EMP.Forms
 
         public override void Draw()
         {
-            GUI.SetNextControlName(name);
+            GUI.SetNextControlName(Name);
             GUI.Label(Rect, Text, style);
         }
     }
@@ -279,7 +281,7 @@ namespace EMP.Forms
 
         public override void Draw()
         {
-            GUI.SetNextControlName(name);
+            GUI.SetNextControlName(Name);
             Text = GUI.TextField(Rect, Text, style);
         }
     }
@@ -299,7 +301,7 @@ namespace EMP.Forms
 
         public override void Draw()
         {
-            GUI.SetNextControlName(name);
+            GUI.SetNextControlName(Name);
             Checked = GUI.Toggle(Rect, Checked, Text, style);
         }
     }
