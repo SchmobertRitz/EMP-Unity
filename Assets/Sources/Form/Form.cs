@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace EMP.Form
+namespace EMP.Forms
 {
     public class Form : Linear
     {
@@ -48,11 +48,15 @@ namespace EMP.Form
         public Rect Rect { get; set; }
         public float? Width { get; set; }
         public float? Height { get; set; }
+        public GUIStyle style { get; set; }
+
+        protected string name;
 
         public View()
         {
             Width = null;
             Height = null;
+            name = Guid.NewGuid().ToString();
         }
 
         public virtual void Layout(Rect rect)
@@ -63,6 +67,11 @@ namespace EMP.Form
         public virtual void Draw()
         {
             // Override
+        }
+
+        public void Focus()
+        {
+            GUI.FocusControl(name);
         }
     }
 
@@ -201,7 +210,9 @@ namespace EMP.Form
 
         public override void Draw()
         {
-            views.ForEach(view => view.Draw());
+            views.ForEach(view => {
+                view.Draw();
+            });
         }
     }
 
@@ -209,15 +220,26 @@ namespace EMP.Form
     {
         public string Text { get; set; }
 
-        public Label(string text)
+        public Label(string text) : base()
         {
             Height = LineHeight;
             Text = text;
+            style = new GUIStyle(GUI.skin.label);
         }
 
         public override void Draw()
         {
-            GUI.Label(Rect, Text);
+            GUI.SetNextControlName(name);
+            GUI.Label(Rect, Text, style);
+        }
+    }
+
+    public class Headline : Label
+    {
+        public Headline(string text) : base(text)
+        {
+            style.fontSize = 15;
+            style.fontStyle = FontStyle.Bold;
         }
     }
 
@@ -231,11 +253,12 @@ namespace EMP.Form
             Height = LineHeight;
             Text = text;
             Action = action;
+            style = new GUIStyle(GUI.skin.button);
         }
 
         public override void Draw()
         {
-            if (GUI.Button(Rect, Text) && Action != null)
+            if (GUI.Button(Rect, Text, style) && Action != null)
             {
                 Action(this);
             }
@@ -246,15 +269,18 @@ namespace EMP.Form
     {
         public string Text { get; set; }
 
-        public TextField(string text = "")
+        public TextField(string text = "") : base()
         {
             Height = LineHeight;
             Text = text;
+            style = new GUIStyle(GUI.skin.textField);
+            style.alignment = TextAnchor.MiddleLeft;
         }
 
         public override void Draw()
         {
-            Text = GUI.TextField(Rect, Text);
+            GUI.SetNextControlName(name);
+            Text = GUI.TextField(Rect, Text, style);
         }
     }
 
@@ -263,16 +289,18 @@ namespace EMP.Form
         public bool Checked { get; set; }
         public string Text { get; set; }
 
-        public Toggle(bool isChecked, string text = "")
+        public Toggle(bool isChecked, string text = "") : base()
         {
             Height = LineHeight;
             Checked = isChecked;
             Text = text;
+            style = new GUIStyle(GUI.skin.toggle);
         }
 
         public override void Draw()
         {
-            Checked = GUI.Toggle(Rect, Checked, Text);
+            GUI.SetNextControlName(name);
+            Checked = GUI.Toggle(Rect, Checked, Text, style);
         }
     }
 }
