@@ -1,7 +1,10 @@
-﻿using EMP.Forms;
+﻿using EMP.Cs;
+using EMP.Forms;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
+using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
 
@@ -12,7 +15,7 @@ namespace EMP.Editor
         [MenuItem(MenuPaths.CREATE_CLASS, priority = -1000)]
         public static void OnClick()
         {
-            new CreateCsFile().Show();
+            new CreateCsFile(SelectionHelper.GetSelectedPath()).Show();
         }
 
         [MenuItem(MenuPaths.CREATE_CLASS, true)]
@@ -23,13 +26,20 @@ namespace EMP.Editor
 
         protected override Vector2 GetFormSize()
         {
-            return new Vector2(500, 100);
+            return new Vector2(500, 250);
         }
 
         private TextField txtClassName;
         private TextField txtNamespace;
         private Toggle tglHeaderComment;
         private Toggle tglLogger;
+        private Label lblMissingClassName;
+        private string path;
+
+        public CreateCsFile(string v)
+        {
+            this.path = v;
+        }
 
         protected override void OnCreateForm(Form form)
         {
@@ -52,7 +62,9 @@ namespace EMP.Editor
 
             form.Add(lyNamespace);
             form.Add(lyClassName);
-            
+            form.Add(lblMissingClassName = new Label(""));
+            lblMissingClassName.style.fontStyle = FontStyle.Bold;
+
             form.Add(tglHeaderComment = new Toggle(true, "Generate source code header comment"));
             form.Add(tglLogger = new Toggle(true, "Generate logger"));
 
@@ -67,7 +79,68 @@ namespace EMP.Editor
 
         private void ButtonClicked(Button b)
         {
-            
+            Regex patternClassName = new Regex(@"^\s*[a-zA-Z_][a-zA-Z0-9]*\s*$");
+            if (!patternClassName.IsMatch(txtClassName.Text))
+            {
+                lblMissingClassName.Text = "Please enter a valid C# class name.";
+                return;
+            }
+            string destFile = Path.Combine(path, txtClassName.Text.Trim() + ".cs");
+            if (File.Exists(destFile))
+            {
+                lblMissingClassName.Text = "File already exists.";
+                return;
+            }
+            lblMissingClassName.Text = "";
+
+            Dictionary<string, object> data = new Dictionary<string, object>
+            {
+                { "NAMESPACE", txtNamespace.Text.Trim() },
+                { "HASNAMESPACE", !string.IsNullOrEmpty(txtNamespace.Text.Trim()) },
+                { "GENLOGGER", tglLogger.Checked },
+                { "GENHEADER", tglHeaderComment.Checked },
+                { "CLASS", txtClassName.Text.Trim() }
+            };
+
+            string generated = new CsClassTemplate().Generate(data);
+            File.WriteAllText(destFile, generated);
+            AssetDatabase.Refresh();
+            editorWindow.Close();
+        }
+    }
+
+    public class CsClassTemplate : CsGenerator
+    {
+        protected override string GetTemplate()
+        {
+            return
+@"#if GENHEADER == True
+//  
+// Copyright (c) EMP. All rights reserved.  
+// Licensed under the MIT. See LICENSE file in the project root for full license information.  
+//
+#endif
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+#if GENLOGGER == True
+// Logger definition here
+#endif
+
+#if HASNAMESPACE == True
+namespace #NAMESPACE#
+{
+    public class #CLASS#
+    {
+
+    }
+}
+#else
+public class #CLASS#
+{
+
+}
+#endif";
         }
     }
 
