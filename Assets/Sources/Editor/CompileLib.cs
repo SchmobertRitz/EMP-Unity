@@ -1,32 +1,45 @@
 ﻿using EMP.Editor;
+using Microsoft.CSharp;
+using System;
+using System.CodeDom.Compiler;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 
-public class CompileLib : MonoBehaviour {
+public class CompileLib {
     private List<string> sourceFiles = new List<string>();
-    private string smartObjectRoot;
+    private string path;
 
-    [MenuItem("Compile C#s")]
-    public static void OnClick()
+    [MenuItem("Assets/Create/DLL from all C# files in folder")]
+    public static void OnCompileAll()
     {
-    
+        new CompileLib(SelectionHelper.GetSelectedPath()).Compile();
     }
 
-    [MenuItem("Compile C#s", true)]
-    public static bool Check()
+    [MenuItem("Assets/Create/DLL from all C# files in folder", true)]
+    public static bool CheckCompileAll()
     {
         return SelectionHelper.IsDirectorySelected();
     }
-
-    public CompileLib(string smartObjectRoot)
+    /*
+    [MenuItem("Assets/Create/DLL from C# files in folder...")]
+    public static void OnCompileSelected()
     {
-        if (!IsFilestructureCorrect(smartObjectRoot))
-        {
-            throw new ArgumentException();
-        }
-        this.smartObjectRoot = smartObjectRoot;
+        
+    }
+
+    [MenuItem("Assets/Create/DLL from C# files in folder...", true)]
+    public static bool CheckCompileSelected()
+    {
+        return SelectionHelper.IsDirectorySelected();
+    }
+    */
+    public CompileLib(string path)
+    {
+        this.path = path;
     }
 
     private void CollectSourceFiles(string path)
@@ -46,12 +59,14 @@ public class CompileLib : MonoBehaviour {
 
     public void Compile()
     {
-        CollectSourceFiles(smartObjectRoot);
+        CollectSourceFiles(path);
 
-        string libName = Path.GetFileName(smartObjectRoot) + ".dll";
+        string libName = path.Replace("/", ".").Replace(@"\", ".") + ".dll";
+        string tmpLibName = Path.GetFileName(path) + "-" + Guid.NewGuid() + ".dll";
+
         CompilerParameters compilerParameters = new CompilerParameters();
         compilerParameters.GenerateExecutable = false;
-        compilerParameters.OutputAssembly = libName;
+        compilerParameters.OutputAssembly = tmpLibName;
         compilerParameters.IncludeDebugInformation = false;
 
         foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
@@ -67,15 +82,14 @@ public class CompileLib : MonoBehaviour {
 
         if (results.Errors.Count != 0)
         {
+            Debug.LogError("Errors occured while compiling:");
             foreach (string err in results.Output)
             {
-                Debug.Log(err);
+                Debug.LogError(err);
             }
         }
-        else
-        {
-            File.Move(results.PathToAssembly, Path.Combine(smartObjectRoot, libName));
-            AssetDatabase.Refresh();
-        }
+
+        File.Move(tmpLibName, Path.Combine(path, libName));
+        AssetDatabase.Refresh();
     }
 }
