@@ -1,8 +1,9 @@
-﻿using System;
-using System.Collections;
+﻿//
+// MIT License
+// Copyright (c) EMP - https://github.com/SchmobertRitz/EMP-Unity
+//
 using System.Collections.Generic;
 using System.Text;
-using UnityEngine;
 
 namespace EMP.Cs
 {
@@ -66,7 +67,7 @@ namespace EMP.Cs
             string text = tn.text;
             foreach (KeyValuePair<string, object> date in data)
             {
-                text = text.Replace("#" + date.Key + "#", date.Value.ToString());
+                text = text.Replace("#" + date.Key + "#", date.Value == null ? "null" : date.Value.ToString());
             }
             sb.Append(text);
         }

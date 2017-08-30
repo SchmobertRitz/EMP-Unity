@@ -1,21 +1,70 @@
-﻿using EMP.Cs;
+﻿//
+// MIT License
+// Copyright (c) EMP - https://github.com/SchmobertRitz/EMP-Unity
+//
+using EMP.Cs;
 using EMP.Forms;
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Xml;
+using System.Xml.Serialization;
 using UnityEditor;
 using UnityEngine;
 
 namespace EMP.Editor
 {
-    public class CreateCsFile : FormPopup
+    public class CreateCsFileAction : FormPopup
     {
         [MenuItem(MenuPaths.CREATE_CLASS, priority = -1000)]
         public static void OnClick()
         {
-            new CreateCsFile(SelectionHelper.GetSelectedPath()).Show();
+            SourcesInfo sources = new SourcesInfo();
+            FillInSoureData(SelectionHelper.GetSelectedPath(), sources);
+            new CreateCsFileAction(SelectionHelper.GetSelectedPath(), sources).Show();
+        }
+
+        private static void FillInSoureData(string path, SourcesInfo result)
+        {
+            if (result.headerComment == null || result.@namespace == null)
+            {
+                string filename = Path.Combine(path, SourcesInfo.FILE_NAME);
+                SourcesInfo sources = Deserialize(filename);
+                if (sources != null)
+                {
+                    if (result.headerComment == null)
+                    {
+                        result.headerComment = sources.headerComment;
+                    }
+                    if (result.@namespace == null)
+                    {
+                        result.@namespace = sources.@namespace;
+                    }
+                }
+                if (result.headerComment == null || result.@namespace == null)
+                {
+                    string lastSegment = Path.GetFileName(path);
+                    if (!lastSegment.Equals(path))
+                    {
+                        FillInSoureData(path.Substring(0, path.Length - (lastSegment.Length + 1)), result);
+                    }
+                }
+            }
+        }
+
+        private static SourcesInfo Deserialize(string filename)
+        {
+            if (!File.Exists(filename))
+            {
+                return null;
+            }
+            var serializer = new XmlSerializer(typeof(SourcesInfo));
+
+            using (var stringReader = new StringReader(File.ReadAllText(filename)))
+            using (var xmlTextReader = new XmlTextReader(stringReader))
+            {
+                return (SourcesInfo) serializer.Deserialize(xmlTextReader);
+            }
         }
 
         [MenuItem(MenuPaths.CREATE_CLASS, true)]
@@ -35,10 +84,12 @@ namespace EMP.Editor
         private Toggle tglLogger;
         private Label lblMissingClassName;
         private string path;
+        private SourcesInfo sourcesInfo;
 
-        public CreateCsFile(string v)
+        public CreateCsFileAction(string path, SourcesInfo sourcesInfo)
         {
-            this.path = v;
+            this.path = path;
+            this.sourcesInfo = sourcesInfo;
         }
 
         protected override void OnCreateForm(Form form)
@@ -50,7 +101,7 @@ namespace EMP.Editor
 
             Label lblNamespace = new Label("Namespace:");
             lblNamespace.Width = 150;
-            txtNamespace = new TextField();
+            txtNamespace = new TextField(sourcesInfo.@namespace);
             Linear lyNamespace = Linear.Horizontal().Add(lblNamespace).Add(txtNamespace);
             lyNamespace.Height = 30;
 
@@ -98,7 +149,8 @@ namespace EMP.Editor
                 { "NAMESPACE", txtNamespace.Text.Trim() },
                 { "HASNAMESPACE", !string.IsNullOrEmpty(txtNamespace.Text.Trim()) },
                 { "GENLOGGER", tglLogger.Checked },
-                { "GENHEADER", tglHeaderComment.Checked },
+                { "GENHEADER", tglHeaderComment.Checked && sourcesInfo.headerComment != null},
+                { "HEADER", sourcesInfo.headerComment},
                 { "CLASS", txtClassName.Text.Trim() }
             };
 
@@ -115,10 +167,7 @@ namespace EMP.Editor
         {
             return
 @"#if GENHEADER == True
-//  
-// Copyright (c) EMP. All rights reserved.  
-// Licensed under the MIT. See LICENSE file in the project root for full license information.  
-//
+#HEADER#
 #endif
 using System.Collections;
 using System.Collections.Generic;
@@ -142,6 +191,18 @@ public class #CLASS#
 }
 #endif";
         }
+    }
+
+    [XmlRoot(ElementName = "SourcesInfo")]
+    public class SourcesInfo
+    {
+        public const string FILE_NAME = ".SourcesInfo.xml";
+
+        [XmlElement(ElementName = "Namespace")]
+        public string @namespace;
+
+        [XmlElement(ElementName = "HeaderComment")]
+        public string headerComment;
     }
 
 }

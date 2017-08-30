@@ -1,4 +1,8 @@
-﻿using EMP.EventBus;
+﻿//
+// MIT License
+// Copyright (c) EMP - https://github.com/SchmobertRitz/EMP-Unity
+//
+using EMP.EventBus;
 using EMP.Wire;
 
 [Singleton]

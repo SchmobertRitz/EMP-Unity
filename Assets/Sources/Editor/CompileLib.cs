@@ -1,8 +1,11 @@
-﻿using EMP.Editor;
+﻿//
+// MIT License
+// Copyright (c) EMP - https://github.com/SchmobertRitz/EMP-Unity
+//
+using EMP.Editor;
 using Microsoft.CSharp;
 using System;
 using System.CodeDom.Compiler;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;

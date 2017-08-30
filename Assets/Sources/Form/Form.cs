@@ -1,5 +1,8 @@
-﻿using System;
-using System.Collections;
+﻿//
+// MIT License
+// Copyright (c) EMP - https://github.com/SchmobertRitz/EMP-Unity
+//
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -274,7 +277,7 @@ namespace EMP.Forms
         public TextField(string text = "") : base()
         {
             Height = LineHeight;
-            Text = text;
+            Text = text == null ? "" : text;
             style = new GUIStyle(GUI.skin.textField);
             style.alignment = TextAnchor.MiddleLeft;
         }

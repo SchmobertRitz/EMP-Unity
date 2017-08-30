@@ -1,5 +1,8 @@
-﻿using UnityEngine;
-using System.Collections;
+﻿//
+// MIT License
+// Copyright (c) EMP - https://github.com/SchmobertRitz/EMP-Unity
+//
+using UnityEngine;
 using System.Reflection;
 using System;
 using System.Collections.Generic;

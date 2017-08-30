@@ -1,4 +1,8 @@
-﻿using EMP.Forms;
+﻿//
+// MIT License
+// Copyright (c) EMP - https://github.com/SchmobertRitz/EMP-Unity
+//
+using EMP.Forms;
 using UnityEditor;
 using UnityEngine;
 
@@ -37,6 +41,11 @@ namespace EMP.Editor {
         }
         protected abstract void OnCreateForm(Form form);
         protected abstract Vector2 GetFormSize();
+
+        public override Vector2 GetWindowSize()
+        {
+            return GetFormSize();
+        }
     }
 
 }

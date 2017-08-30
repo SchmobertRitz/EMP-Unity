@@ -1,4 +1,7 @@
-﻿using System;
+﻿//
+// MIT License
+// Copyright (c) EMP - https://github.com/SchmobertRitz/EMP-Unity
+//
 using System.Text;
 using System.Text.RegularExpressions;
 

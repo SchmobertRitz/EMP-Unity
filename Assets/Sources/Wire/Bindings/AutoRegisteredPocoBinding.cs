@@ -1,4 +1,8 @@
-﻿using System;
+﻿//
+// MIT License
+// Copyright (c) EMP - https://github.com/SchmobertRitz/EMP-Unity
+//
+using System;
 using System.Reflection;
 
 namespace EMP.Wire
