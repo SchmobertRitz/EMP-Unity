@@ -20,51 +20,8 @@ namespace EMP.Editor
         public static void OnClick()
         {
             SourcesInfo sources = new SourcesInfo();
-            FillInSoureData(SelectionHelper.GetSelectedPath(), sources);
+            SourcesInfo.FillInSoureData(SelectionHelper.GetSelectedPath(), sources);
             new CreateCsFileAction(SelectionHelper.GetSelectedPath(), sources).Show();
-        }
-
-        private static void FillInSoureData(string path, SourcesInfo result)
-        {
-            if (result.headerComment == null || result.@namespace == null)
-            {
-                string filename = Path.Combine(path, SourcesInfo.FILE_NAME);
-                SourcesInfo sources = Deserialize(filename);
-                if (sources != null)
-                {
-                    if (result.headerComment == null)
-                    {
-                        result.headerComment = sources.headerComment;
-                    }
-                    if (result.@namespace == null)
-                    {
-                        result.@namespace = sources.@namespace;
-                    }
-                }
-                if (result.headerComment == null || result.@namespace == null)
-                {
-                    string lastSegment = Path.GetFileName(path);
-                    if (!lastSegment.Equals(path))
-                    {
-                        FillInSoureData(path.Substring(0, path.Length - (lastSegment.Length + 1)), result);
-                    }
-                }
-            }
-        }
-
-        private static SourcesInfo Deserialize(string filename)
-        {
-            if (!File.Exists(filename))
-            {
-                return null;
-            }
-            var serializer = new XmlSerializer(typeof(SourcesInfo));
-
-            using (var stringReader = new StringReader(File.ReadAllText(filename)))
-            using (var xmlTextReader = new XmlTextReader(stringReader))
-            {
-                return (SourcesInfo) serializer.Deserialize(xmlTextReader);
-            }
         }
 
         [MenuItem(MenuPaths.CREATE_CLASS, true)]
@@ -72,7 +29,7 @@ namespace EMP.Editor
         {
             return SelectionHelper.IsDirectorySelected();
         }
-
+        
         protected override Vector2 GetFormSize()
         {
             return new Vector2(500, 250);
@@ -197,6 +154,49 @@ public class #CLASS#
     public class SourcesInfo
     {
         public const string FILE_NAME = ".SourcesInfo.xml";
+
+        public static void FillInSoureData(string path, SourcesInfo result)
+        {
+            if (result.headerComment == null || result.@namespace == null)
+            {
+                string filename = Path.Combine(path, SourcesInfo.FILE_NAME);
+                SourcesInfo sources = Deserialize(filename);
+                if (sources != null)
+                {
+                    if (result.headerComment == null)
+                    {
+                        result.headerComment = sources.headerComment;
+                    }
+                    if (result.@namespace == null)
+                    {
+                        result.@namespace = sources.@namespace;
+                    }
+                }
+                if (result.headerComment == null || result.@namespace == null)
+                {
+                    string lastSegment = Path.GetFileName(path);
+                    if (!lastSegment.Equals(path))
+                    {
+                        FillInSoureData(path.Substring(0, path.Length - (lastSegment.Length + 1)), result);
+                    }
+                }
+            }
+        }
+
+        private static SourcesInfo Deserialize(string filename)
+        {
+            if (!File.Exists(filename))
+            {
+                return null;
+            }
+            var serializer = new XmlSerializer(typeof(SourcesInfo));
+
+            using (var stringReader = new StringReader(File.ReadAllText(filename)))
+            using (var xmlTextReader = new XmlTextReader(stringReader))
+            {
+                return (SourcesInfo)serializer.Deserialize(xmlTextReader);
+            }
+        }
 
         [XmlElement(ElementName = "Namespace")]
         public string @namespace;
