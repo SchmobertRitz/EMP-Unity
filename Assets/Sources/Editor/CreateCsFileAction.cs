@@ -39,7 +39,7 @@ namespace EMP.Editor
         private TextField txtNamespace;
         private Toggle tglHeaderComment;
         private Toggle tglLogger;
-        private Label lblMissingClassName;
+        private Label lblError;
         private string path;
         private SourcesInfo sourcesInfo;
 
@@ -51,7 +51,6 @@ namespace EMP.Editor
 
         protected override void OnCreateForm(Form form)
         {
-            Vector3 formSize = GetFormSize();
             form.Spacing = 5;
 
             form.Add(new Headline("Create C# Class"));
@@ -70,8 +69,8 @@ namespace EMP.Editor
 
             form.Add(lyNamespace);
             form.Add(lyClassName);
-            form.Add(lblMissingClassName = new Label(""));
-            lblMissingClassName.style.fontStyle = FontStyle.Bold;
+            form.Add(lblError = new Label(""));
+            lblError.style.fontStyle = FontStyle.Bold;
 
             form.Add(tglHeaderComment = new Toggle(true, "Generate source code header comment"));
             form.Add(tglLogger = new Toggle(true, "Generate logger"));
@@ -90,16 +89,22 @@ namespace EMP.Editor
             Regex patternClassName = new Regex(@"^\s*[a-zA-Z_][a-zA-Z0-9]*\s*$");
             if (!patternClassName.IsMatch(txtClassName.Text))
             {
-                lblMissingClassName.Text = "Please enter a valid C# class name.";
+                lblError.Text = "Please enter a valid C# class name.";
                 return;
             }
             string destFile = Path.Combine(path, txtClassName.Text.Trim() + ".cs");
             if (File.Exists(destFile))
             {
-                lblMissingClassName.Text = "File already exists.";
+                lblError.Text = "File already exists.";
                 return;
             }
-            lblMissingClassName.Text = "";
+            Regex patternNamespace = new Regex(@"^\s*[a-zA-Z_][a-zA-Z0-9]*(\.[a-zA-Z_][a-zA-Z0-9]*)*\s*$");
+            if (!patternNamespace.IsMatch(txtNamespace.Text))
+            {
+                lblError.Text = "Please enter a valid namespace.";
+                return;
+            }
+            lblError.Text = "";
 
             Dictionary<string, object> data = new Dictionary<string, object>
             {
@@ -160,7 +165,7 @@ public class #CLASS#
             if (result.headerComment == null || result.@namespace == null)
             {
                 string filename = Path.Combine(path, SourcesInfo.FILE_NAME);
-                SourcesInfo sources = Deserialize(filename);
+                SourcesInfo sources = Load(filename);
                 if (sources != null)
                 {
                     if (result.headerComment == null)
@@ -183,18 +188,31 @@ public class #CLASS#
             }
         }
 
-        private static SourcesInfo Deserialize(string filename)
+        public static SourcesInfo Load(string filename)
         {
             if (!File.Exists(filename))
             {
                 return null;
             }
-            var serializer = new XmlSerializer(typeof(SourcesInfo));
+            XmlSerializer serializer = new XmlSerializer(typeof(SourcesInfo));
 
             using (var stringReader = new StringReader(File.ReadAllText(filename)))
             using (var xmlTextReader = new XmlTextReader(stringReader))
             {
                 return (SourcesInfo)serializer.Deserialize(xmlTextReader);
+            }
+        }
+
+        public void Save(string filename)
+        {
+            if (File.Exists(filename))
+            {
+                File.Delete(filename);
+            }
+            XmlSerializer serializer = new XmlSerializer(typeof(SourcesInfo));
+            using (var writeFileStream = new StreamWriter(filename))
+            {
+                serializer.Serialize(writeFileStream, this);
             }
         }
 
