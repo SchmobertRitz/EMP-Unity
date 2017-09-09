@@ -39,7 +39,7 @@ namespace EMP.ChatterBox
             ChatterBox.instance = null;
         }
 
-        public void Say(string text, AudioSource audioSource = null, ECachingMode cachingMode = ECachingMode.CacheInFileSystem)
+        public void Prepare(string text, Action<AudioClip> onPreparedHandler, ECachingMode cachingMode = ECachingMode.CacheInFileSystem)
         {
             if (ChatterBox.Instance == null)
             {
@@ -49,12 +49,13 @@ namespace EMP.ChatterBox
 
             string cacheName = tts.GetCacheFilename(text);
 
-            if (cachingMode == ECachingMode.CacheInUnity) {
+            if (cachingMode == ECachingMode.CacheInUnity)
+            {
                 string resourceName = cacheName.Substring(0, cacheName.Length - Path.GetExtension(cacheName).Length);
                 AudioClip audioClip = Resources.Load<AudioClip>(resourceName);
                 if (audioClip != null)
                 {
-                    PlayAudioClip(audioClip, audioSource);
+                    onPreparedHandler(audioClip);
                     return;
                 }
             }
@@ -64,7 +65,7 @@ namespace EMP.ChatterBox
                 string fileSystemName = Path.Combine(FilesystemCachePath, cacheName);
                 if (File.Exists(fileSystemName))
                 {
-                    LoadAndPlayAudioClip(cacheName, cachingMode, audioSource);
+                    PrepareAudioClip(cacheName, cachingMode, onPreparedHandler);
                     return;
                 }
             }
@@ -72,18 +73,29 @@ namespace EMP.ChatterBox
             // no cache hit. Needs to be generated.
             tts.CreateAudioFileFromText(
                 text,
-                filename => LoadAndPlayAudioClip(filename, cachingMode, audioSource),
+                filename => PrepareAudioClip(filename, cachingMode, onPreparedHandler),
                 error => Debug.LogError(error)
             );
         }
 
-        private void LoadAndPlayAudioClip(string filename, ECachingMode cachingMode, AudioSource audioSource)
+        public void Say(string text, AudioSource audioSource = null, ECachingMode cachingMode = ECachingMode.CacheInFileSystem)
+        {
+            if (ChatterBox.Instance == null)
+            {
+                Debug.LogError("Unable to speak text. ChatterBox not ready.");
+                return;
+            }
+
+            Prepare(text, audioClip => PlayAudioClip(audioClip, audioSource), cachingMode);
+        }
+
+        private void PrepareAudioClip(string filename, ECachingMode cachingMode, Action<AudioClip> onPreparedHandler)
         {
             StartCoroutine(
                 LoadAudioClip(
                     filename,
                     cachingMode,
-                    audioClip => PlayAudioClip(audioClip, audioSource)
+                    onPreparedHandler
                 )
             );
         }
@@ -97,7 +109,8 @@ namespace EMP.ChatterBox
             if (cachingMode == ECachingMode.NoCaching)
             {
                 File.Delete(fullFilePath);
-            } else if (cachingMode == ECachingMode.CacheInUnity && Application.isEditor)
+            }
+            else if (cachingMode == ECachingMode.CacheInUnity && Application.isEditor)
             {
                 string fullUnityPath = GetFullUnityCachePath();
                 string fullUnityFilePath = Path.Combine(fullUnityPath, filename);
@@ -105,14 +118,15 @@ namespace EMP.ChatterBox
                 {
                     Directory.CreateDirectory(fullUnityPath);
                     File.Move(fullFilePath, Path.Combine(fullUnityPath, filename));
-                } else
+                }
+                else
                 {
                     Debug.LogWarning("Tried to duplicate TTS cache. Seems that the Unity TTS cache is not yet imported. Try refreshing the project view.");
                 }
             }
         }
 
-        private void PlayAudioClip(AudioClip audioClip, AudioSource audioSource)
+        public void PlayAudioClip(AudioClip audioClip, AudioSource audioSource = null)
         {
             if (audioSource != null)
             {
