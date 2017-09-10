@@ -11,10 +11,14 @@ namespace EMP.ChatterBox.Test
     {
         private Form form;
         private TextField txtText;
-        
+
         private void Say(Button obj)
         {
-            ChatterBox.Instance.Say(txtText.Text, GetComponent<AudioSource>(), ChatterBox.ECachingMode.CacheInUnity);
+            new TTS
+            {
+                AudioSource = GetComponent<AudioSource>(),
+                TextToSpeech = new ResponsiveVoiceGermanFemale()
+            }.Say(txtText.Text, null, ChatterBox.ECachingMode.CacheInUnity);
         }
 
         private Form GetForm()

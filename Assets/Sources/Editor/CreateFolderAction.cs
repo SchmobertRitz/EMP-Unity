@@ -11,12 +11,12 @@ using System.IO;
 
 namespace EMP.Editor
 {
-    public class CreateDefaultFoldersAction : FormPopup
+    public class CreateFolderAction : FormPopup
     {
         private string path;
         private SourcesInfo transitiveSourceInfo;
         
-        [MenuItem(MenuPaths.CREATE_DEFAULT_FOLDERS, priority = -1000 + 1)]
+        [MenuItem(MenuPaths.CREATE_FOLDER, priority = -1000 + 1)]
         public static void OnClick()
         {
             SourcesInfo sources = new SourcesInfo();
@@ -26,16 +26,16 @@ namespace EMP.Editor
                 path = @"Assets/";
             }
             SourcesInfo.FillInSoureData(path, sources);
-            new CreateDefaultFoldersAction(path, sources).Show();
+            new CreateFolderAction(path, sources).Show();
         }
 
-        [MenuItem(MenuPaths.CREATE_DEFAULT_FOLDERS, true)]
+        [MenuItem(MenuPaths.CREATE_FOLDER, true)]
         public static bool Check()
         {
             return SelectionHelper.IsDirectorySelected() || SelectionHelper.GetSelectedPath() == null;
         }
 
-        public CreateDefaultFoldersAction(string path, SourcesInfo sourcesInfo)
+        public CreateFolderAction(string path, SourcesInfo sourcesInfo)
         {
             this.path = path;
             this.transitiveSourceInfo = sourcesInfo;
@@ -79,9 +79,9 @@ namespace EMP.Editor
             Label lblSubfolders = new Label("Create subfolders:");
             lblSubfolders.Width = 150;
 
-            Grid lyCheckboxes = new Grid(2, Grid.EOrientation.Vertical);
+            Grid lyCheckboxes = new Grid(3, Grid.EOrientation.Vertical);
             
-            foreach(string folder in new string[] { "Scripts", "Prefabs", "Resources", "Textures", "Materials", "Meshes" })
+            foreach(string folder in new string[] { "Scripts", "Scenes", "Prefabs", "Resources", "Textures", "Materials", "Meshes" })
             {
                 Toggle toggle = new Toggle(false, folder);
                 subfolders.Add(toggle);

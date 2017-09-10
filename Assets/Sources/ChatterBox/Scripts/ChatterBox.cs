@@ -11,13 +11,12 @@ namespace EMP.ChatterBox
 {
     public class ChatterBox : MonoBehaviour
     {
+        
+
         public enum ECachingMode
         {
             NoCaching, CacheInFileSystem, CacheInUnity
         }
-
-        public AudioSource DefaultAudioSource
-        { get; set; }
 
         public string UnityCachePath = "ChatterBoxCache/Resources";
         public string FilesystemCachePath = "ChatterBoxCache";
@@ -25,13 +24,10 @@ namespace EMP.ChatterBox
         private static ChatterBox instance;
         public static ChatterBox Instance
         { get { return instance; } }
-
-        ITextToSpeech tts;
-
+        
         private void Awake()
         {
             ChatterBox.instance = this;
-            tts = new ResponsiveVoiceGermanFemale(this);
         }
 
         private void OnDestroy()
@@ -39,7 +35,7 @@ namespace EMP.ChatterBox
             ChatterBox.instance = null;
         }
 
-        public void Prepare(string text, Action<AudioClip> onPreparedHandler, ECachingMode cachingMode = ECachingMode.CacheInFileSystem)
+        internal void Prepare(string text, TTS tts, Action<Action<Action>> onPreparedHandler, ECachingMode cachingMode = ECachingMode.CacheInFileSystem)
         {
             if (ChatterBox.Instance == null)
             {
@@ -47,7 +43,7 @@ namespace EMP.ChatterBox
                 return;
             }
 
-            string cacheName = tts.GetCacheFilename(text);
+            string cacheName = tts.TextToSpeech.GetCacheFilename(text);
 
             if (cachingMode == ECachingMode.CacheInUnity)
             {
@@ -55,7 +51,7 @@ namespace EMP.ChatterBox
                 AudioClip audioClip = Resources.Load<AudioClip>(resourceName);
                 if (audioClip != null)
                 {
-                    onPreparedHandler(audioClip);
+                    onPreparedHandler(onTssEndedAction => tts.PlayAudioClip(audioClip, text, onTssEndedAction));
                     return;
                 }
             }
@@ -65,28 +61,25 @@ namespace EMP.ChatterBox
                 string fileSystemName = Path.Combine(FilesystemCachePath, cacheName);
                 if (File.Exists(fileSystemName))
                 {
-                    PrepareAudioClip(cacheName, cachingMode, onPreparedHandler);
+                    PrepareAudioClip(
+                        cacheName,
+                        cachingMode,
+                        audioClip => onPreparedHandler(onTssEndedAction => tts.PlayAudioClip(audioClip, text, onTssEndedAction))
+                     );
                     return;
                 }
             }
 
             // no cache hit. Needs to be generated.
-            tts.CreateAudioFileFromText(
+            tts.TextToSpeech.CreateAudioFileFromText(
                 text,
-                filename => PrepareAudioClip(filename, cachingMode, onPreparedHandler),
+                filename => PrepareAudioClip(
+                    filename,
+                    cachingMode,
+                    audioClip => onPreparedHandler(onTssEndedAction => tts.PlayAudioClip(audioClip, text, onTssEndedAction))
+                ),
                 error => Debug.LogError(error)
             );
-        }
-
-        public void Say(string text, AudioSource audioSource = null, ECachingMode cachingMode = ECachingMode.CacheInFileSystem)
-        {
-            if (ChatterBox.Instance == null)
-            {
-                Debug.LogError("Unable to speak text. ChatterBox not ready.");
-                return;
-            }
-
-            Prepare(text, audioClip => PlayAudioClip(audioClip, audioSource), cachingMode);
         }
 
         private void PrepareAudioClip(string filename, ECachingMode cachingMode, Action<AudioClip> onPreparedHandler)
@@ -125,23 +118,7 @@ namespace EMP.ChatterBox
                 }
             }
         }
-
-        public void PlayAudioClip(AudioClip audioClip, AudioSource audioSource = null)
-        {
-            if (audioSource != null)
-            {
-                audioSource.PlayOneShot(audioClip);
-            }
-            else if (DefaultAudioSource != null)
-            {
-                DefaultAudioSource.PlayOneShot(audioClip);
-            }
-            else
-            {
-                Debug.LogWarning("Unable to play tts. No AudioSource given and no default AudioSource set.");
-            }
-        }
-
+        
         private string GetFullUnityCachePath()
         {
             return Path.Combine("Assets", UnityCachePath);

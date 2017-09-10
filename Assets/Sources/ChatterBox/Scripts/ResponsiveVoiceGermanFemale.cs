@@ -17,9 +17,9 @@ namespace EMP.ChatterBox
         private readonly SHA256 hasher;
         private IAudioConverter audioConverter = new NAudioAudioConverter();
 
-        internal ResponsiveVoiceGermanFemale(ChatterBox chatterBox)
+        internal ResponsiveVoiceGermanFemale()
         {
-            this.chatterBox = chatterBox;
+            this.chatterBox = ChatterBox.Instance;
             hasher = SHA256.Create();
 #if UNITY_EDITOR
             Debug.Log("** This TTS implementation uses https://responsivevoice.org/. If you use it for commercial projects, don't forget to pay for it. **");
