@@ -1,4 +1,8 @@
-﻿using UnityEngine;
+﻿//
+// MIT License
+// Copyright (c) EMP - https://github.com/SchmobertRitz/EMP-Unity
+//
+using UnityEngine;
 using System.Collections.Generic;
 using System;
 
@@ -8,7 +12,7 @@ namespace EMP.Animations
     {
         AnimateThis.TransformAnimationBuilder Transform();
         AnimateThis.ValueAnimationBuilder Value(Action<float> handler);
-        AnimateThis.AudioAnimationBuilder Audio();
+        AnimateThis.AudioAnimationBuilder Audio(AudioSource audioSource = null);
         IAnimateThis CancelAll();
         IAnimateThis Cancel(AnimateThis.Animation animation);
     }
@@ -391,9 +395,9 @@ namespace EMP.Animations
                 return builder;
             }
 
-            public AudioAnimationBuilder Audio()
+            public AudioAnimationBuilder Audio(AudioSource audioSource = null)
             {
-                AudioAnimationBuilder builder = delegateInstance.Audio();
+                AudioAnimationBuilder builder = delegateInstance.Audio(audioSource);
                 LinkBuilders(builder);
                 return builder;
             }
@@ -586,9 +590,9 @@ namespace EMP.Animations
             return new ValueAnimationBuilder(this, new ValueAnimatable(handler));
         }
 
-        public AudioAnimationBuilder Audio()
+        public AudioAnimationBuilder Audio(AudioSource audioSource = null)
         {
-            return new AudioAnimationBuilder(this, new AudioAnimatable(GetComponent<AudioSource>()));
+            return new AudioAnimationBuilder(this, new AudioAnimatable(audioSource == null ? GetComponent<AudioSource>() : audioSource));
         }
 
         private void Add(Animation a)

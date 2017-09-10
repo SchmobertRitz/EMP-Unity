@@ -96,8 +96,13 @@ namespace EMP.ChatterBox
         private IEnumerator LoadAudioClip(string filename, ECachingMode cachingMode, Action<AudioClip> resultHandler)
         {
             string fullFilePath = Path.Combine(FilesystemCachePath, filename);
-            WWW www = new WWW(string.Format(@"file://{0}", fullFilePath));
+            string url = string.Format(@"file:///{0}", Path.GetDirectoryName(Application.dataPath) + "/" + fullFilePath.Replace(@"\", @"/"));
+            WWW www = new WWW(url);
             yield return www;
+            if (!string.IsNullOrEmpty(www.error))
+            {
+                Debug.LogError(www.error);
+            }
             resultHandler(www.GetAudioClip(false, false, AudioType.WAV));
             if (cachingMode == ECachingMode.NoCaching)
             {
