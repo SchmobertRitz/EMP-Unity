@@ -32,7 +32,7 @@ namespace EMP.ChatterBox
 
         public void Prepare(string text, Action<Action<Action>> ttsStartAction, Action onTssEndedAction = null, ChatterBox.ECachingMode cachingMode = ChatterBox.ECachingMode.CacheInFileSystem) {
             ChatterBox.Instance.Prepare(
-                text,
+                new TTSText(text),
                 this,
                 ttsStartAction,
                 cachingMode
@@ -41,14 +41,14 @@ namespace EMP.ChatterBox
 
         public void Say(string text, Action onTssEndedAction = null, ChatterBox.ECachingMode cachingMode = ChatterBox.ECachingMode.CacheInFileSystem) {
             ChatterBox.Instance.Prepare(
-                text,
+                new TTSText(text),
                 this,
                 startSayingAction => startSayingAction(onTssEndedAction),
                 cachingMode
             );
         }
         
-        internal void PlayAudioClip(AudioClip audioClip, string text, Action onTssEndedAction) {
+        internal void PlayAudioClip(AudioClip audioClip, TTSText ttsText, Action onTssEndedAction) {
             if (waitForEndOfAudioClipCoroutine != null)
             {
                 ChatterBox.Instance.StopCoroutine(waitForEndOfAudioClipCoroutine);
@@ -58,7 +58,7 @@ namespace EMP.ChatterBox
 
             if (TextDisplay != null)
             {
-                TextDisplay.SetText(text);
+                TextDisplay.SetText(ttsText.DisplayText);
             }
 
             if (AudioSource != null)

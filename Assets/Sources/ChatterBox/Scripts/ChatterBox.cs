@@ -35,7 +35,7 @@ namespace EMP.ChatterBox
             ChatterBox.instance = null;
         }
 
-        internal void Prepare(string text, TTS tts, Action<Action<Action>> onPreparedHandler, ECachingMode cachingMode = ECachingMode.CacheInFileSystem)
+        internal void Prepare(TTSText ttsText, TTS tts, Action<Action<Action>> onPreparedHandler, ECachingMode cachingMode = ECachingMode.CacheInFileSystem)
         {
             if (ChatterBox.Instance == null)
             {
@@ -43,7 +43,7 @@ namespace EMP.ChatterBox
                 return;
             }
 
-            string cacheName = tts.TextToSpeech.GetCacheFilename(text);
+            string cacheName = tts.TextToSpeech.GetCacheFilename(ttsText.SpokenText);
 
             if (cachingMode == ECachingMode.CacheInUnity)
             {
@@ -51,7 +51,7 @@ namespace EMP.ChatterBox
                 AudioClip audioClip = Resources.Load<AudioClip>(resourceName);
                 if (audioClip != null)
                 {
-                    onPreparedHandler(onTssEndedAction => tts.PlayAudioClip(audioClip, text, onTssEndedAction));
+                    onPreparedHandler(onTssEndedAction => tts.PlayAudioClip(audioClip, ttsText, onTssEndedAction));
                     return;
                 }
             }
@@ -64,7 +64,7 @@ namespace EMP.ChatterBox
                     PrepareAudioClip(
                         cacheName,
                         cachingMode,
-                        audioClip => onPreparedHandler(onTssEndedAction => tts.PlayAudioClip(audioClip, text, onTssEndedAction))
+                        audioClip => onPreparedHandler(onTssEndedAction => tts.PlayAudioClip(audioClip, ttsText, onTssEndedAction))
                      );
                     return;
                 }
@@ -72,11 +72,11 @@ namespace EMP.ChatterBox
 
             // no cache hit. Needs to be generated.
             tts.TextToSpeech.CreateAudioFileFromText(
-                text,
+                ttsText.SpokenText,
                 filename => PrepareAudioClip(
                     filename,
                     cachingMode,
-                    audioClip => onPreparedHandler(onTssEndedAction => tts.PlayAudioClip(audioClip, text, onTssEndedAction))
+                    audioClip => onPreparedHandler(onTssEndedAction => tts.PlayAudioClip(audioClip, ttsText, onTssEndedAction))
                 ),
                 error => Debug.LogError(error)
             );
