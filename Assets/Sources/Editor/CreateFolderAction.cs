@@ -81,7 +81,7 @@ namespace EMP.Editor
 
             Grid lyCheckboxes = new Grid(3, Grid.EOrientation.Vertical);
             
-            foreach(string folder in new string[] { "Scripts", "Scenes", "Prefabs", "Resources", "Textures", "Materials", "Meshes" })
+            foreach(string folder in new string[] { "Scripts", "Scenes", "Prefabs", "Resources", "Textures", "Materials", "Meshes", "Editor" })
             {
                 Toggle toggle = new Toggle(false, folder);
                 subfolders.Add(toggle);
