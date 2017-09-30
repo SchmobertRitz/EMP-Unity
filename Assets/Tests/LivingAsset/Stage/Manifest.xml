@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<Manifest name="EMP.Test" description="Das ist ein Test">
-  <Libraries>
-    <Library file="EMP.Test.dll" initializer="EMP.Test.TestInitializer">
-    </Library>
-  </Libraries>
-</Manifest>

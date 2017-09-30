@@ -13,48 +13,33 @@ using Microsoft.CSharp;
 
 namespace EMP.LivingAsset
 {
-    public class LivingAssetCompiler
+    public class DllCompiler
     {
-
-        private readonly List<string> sourceFiles = new List<string>();
         private readonly string path;
         private readonly Manifest manifest;
+        private readonly string buildPath;
 
-        public static bool IsFilestructureCorrect(string path)
+        public static bool IsFileStructureCorrect(string path)
         {
             return Directory.Exists(path)
                     && ((File.GetAttributes(path) & FileAttributes.Directory) == FileAttributes.Directory)
                     && File.Exists(Path.Combine(path, Manifest.FILE_NAME));
         }
 
-        public LivingAssetCompiler(string path)
+        public DllCompiler(string path, string buildPath, Manifest manifest)
         {
-            if (!IsFilestructureCorrect(path))
+            if (!IsFileStructureCorrect(path))
             {
                 throw new ArgumentException();
             }
             this.path = path;
-            this.manifest = Manifest.CreateFromPath(string.Format(@"{0}/{1}", path, Manifest.FILE_NAME));
+            this.manifest = manifest;
+            this.buildPath = buildPath;
         }
-
-        private void CollectSourceFiles(string path)
-        {
-            foreach (string file in Directory.GetFiles(path))
-            {
-                if (file.EndsWith(".cs"))
-                {
-                    sourceFiles.Add(file);
-                }
-            }
-            foreach (string subDir in Directory.GetDirectories(path))
-            {
-                CollectSourceFiles(subDir);
-            }
-        }
-
+        
         public void Compile()
         {
-            CollectSourceFiles(path);
+            List<string> sourceFiles = FilesHelper.CollectFiles(path, file => !file.StartsWith("-") && file.EndsWith(".cs"));
 
             string libName = manifest.Libraries[0].File;
             CompilerParameters compilerParameters = new CompilerParameters();
@@ -73,7 +58,7 @@ namespace EMP.LivingAsset
 
             CompilerResults results = codeDomProvider.CompileAssemblyFromFile(compilerParameters, sourceFiles.ToArray());
 
-            if (results.Errors.Count != 0)
+            if (results.Errors.HasErrors)
             {
                 foreach (string err in results.Output)
                 {
@@ -82,8 +67,7 @@ namespace EMP.LivingAsset
             }
             else
             {
-                File.Move(results.PathToAssembly, Path.Combine(path, libName));
-                AssetDatabase.Refresh();
+                File.Move(results.PathToAssembly, Path.Combine(buildPath, libName));
             }
         }
     }

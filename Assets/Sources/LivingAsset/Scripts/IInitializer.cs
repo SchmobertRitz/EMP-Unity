@@ -6,7 +6,7 @@ namespace EMP.LivingAsset
 {
     public interface IInitializer
     {
-        void Initialize(Manifest manifest);
+        void Initialize(Manifest manifest, UnityEngine.AssetBundle[] assetBundles);
     }
 }
 

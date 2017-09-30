@@ -2,6 +2,7 @@
 // MIT License
 // Copyright (c) EMP - https://github.com/SchmobertRitz/EMP-Unity
 //
+/*
 using System;
 using System.IO;
 using System.Reflection;
@@ -49,12 +50,12 @@ namespace EMP.LivingAsset
             }
         }
 
-        /*
+        
         public List<ILivingAssetFactory> GetFactories()
         {
             return new List<ILivingAssetFactory>(factories);
         }
-        */
+        
 
         private void LoadLib(string path, Manifest manifest, Library lib)
         {
@@ -79,7 +80,7 @@ namespace EMP.LivingAsset
                 IInitializer initializer = (IInitializer) dll.CreateInstance(lib.Initializer);
                 initializer.Initialize(manifest); // TODO: Defensive copying
             }
-            /*foreach(FactoryClass fc in lib.SmartObjectFactoryClasses)
+            foreach(FactoryClass fc in lib.SmartObjectFactoryClasses)
             {
                 if (!string.IsNullOrEmpty(fc.Name))
                 {
@@ -90,7 +91,7 @@ namespace EMP.LivingAsset
                     ISmartObjectFactory factory = (ISmartObjectFactory) dll.CreateInstance(fc.Name);
                     factories.Add(factory);
                 }
-            }*/
+            }
         }
     }
-}
+}*/
