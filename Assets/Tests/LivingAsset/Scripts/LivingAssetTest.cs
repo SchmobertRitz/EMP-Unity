@@ -11,7 +11,8 @@ namespace EMP.Test
     {
         private void Start()
         {
-            LivingAssetLoader loader1 = new LivingAssetLoader(@"EMP.Test.LivingAsset");
+            ILivingAssetDatabase database = new LocalLivingAssetDatabase();
+            LivingAssetLoader loader1 = new LivingAssetLoader(@"EMP.Test", database);
             loader1.Load();
         }
     }

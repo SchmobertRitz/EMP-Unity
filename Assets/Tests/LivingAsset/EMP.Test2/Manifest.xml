@@ -7,6 +7,6 @@
     <Library file="EMP.Test2.dll" initializer="EMP.Test2.Test2Initializer" />
   </Libraries>
   <Dependencies>
-    <Dependency name="EMP.Test" file="EMP.Test.LivingAsset" />
+    <Dependency name="EMP.Test" />
   </Dependencies>
 </Manifest>

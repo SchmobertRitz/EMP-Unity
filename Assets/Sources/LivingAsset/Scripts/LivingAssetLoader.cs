@@ -3,11 +3,9 @@
 // Copyright (c) EMP - https://github.com/SchmobertRitz/EMP-Unity
 //
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
-using System.Reflection;
 using UnityEngine;
 
 namespace EMP.LivingAsset
@@ -15,17 +13,22 @@ namespace EMP.LivingAsset
     public class LivingAssetLoader
     {
         public const string LIVING_ASSET_HEADER = "/* EMP LivingAsset - Version 1.0.0 */\n";
-        private readonly string file;
+        public const string LIVING_ASSET_FILE_EXTENSION = "LivingAsset";
+        private readonly string name;
+        private readonly ILivingAssetDatabase livingAssetDatabase;
+        private Func<string, bool> dependencyLoadingPolicy;
+
 
         private bool alreadyCalled;
 
-        public LivingAssetLoader(string file)
+        public LivingAssetLoader(string name, ILivingAssetDatabase livingAssetDatabase, Func<string, bool> dependencyLoadingPolicy = null)
         {
-            this.file = file;
+            this.name = name;
+            this.livingAssetDatabase = livingAssetDatabase;
+            this.dependencyLoadingPolicy = dependencyLoadingPolicy;
         }
-
-        // Todo: Register laoded asset
-        public LivingAsset Load()
+        
+        public void Load(Action<LivingAsset> livingAssetHandler = null)
         {
             if (alreadyCalled)
             {
@@ -33,67 +36,120 @@ namespace EMP.LivingAsset
             }
             alreadyCalled = true;
 
-            Debug.Log("Start loading LivingAsset '" + file + "'");
+            Debug.Log("Start loading LivingAsset '" + name + "'");
 
-            LivingAsset livingAsset = OpenFileAndReadLivingAsset();
+            LookupAndReadLivingAsset(livingAssetHandler);
+        }
 
+        private void OnLivingAssetParsed(LivingAsset livingAsset, Action<LivingAsset> livingAssetHandler)
+        {
+            if (livingAssetHandler == null)
+            {
+                livingAssetHandler = _ => { };
+            }
+            if (livingAsset == null) {
+                Debug.LogWarning("There where problems while lookup for " + name);
+                livingAssetHandler(null);
+                return;
+            }
             if (!LivingAsset.GetRegistry().IsRegistered(livingAsset.GetName()))
             {
                 LivingAsset.GetRegistry().Register(livingAsset);
-                if (LoadDependencies(livingAsset))
-                {
-                    livingAsset.Load();
-                    livingAsset.Initialize();
-                    Debug.Log("Successfully loaded LivingAsset '" + livingAsset.GetName() + "' from file '" + file + "'");
+                LoadDependencies(livingAsset, success => {
+                    if (success)
+                    {
+                        livingAsset.Load();
+                        livingAsset.Initialize();
+                        Debug.Log("Successfully loaded LivingAsset '" + livingAsset.GetName() + "'");
 
-                    return livingAsset;
-                } else
-                {
-                    Debug.LogWarning("Unable to load dependencies for LivingAsset " + livingAsset.GetName());
-                    return null;
-                }
-
-            } else
+                        livingAssetHandler(livingAsset);
+                    } else
+                    {
+                        Debug.LogWarning("Unable to load dependencies for LivingAsset " + livingAsset.GetName());
+                        livingAssetHandler(null);
+                    }
+                });
+            }
+            else
             {
                 Debug.LogWarning("There is already a LivingAsset loaded with the name " + livingAsset.GetName());
-                return null;
+                livingAssetHandler(null);
             }
         }
 
-        private bool LoadDependencies(LivingAsset livingAsset)
+        private void LoadDependencies(LivingAsset livingAsset, Action<bool> successHandler)
         {
-            bool success = true;
             if (livingAsset.GetDependencies() != null)
             {
-                foreach (Dependency dependency in livingAsset.GetDependencies())
-                {
-                    if (!LivingAsset.GetRegistry().IsRegistered(dependency.Name))
-                    {
-                        LivingAssetLoader loader = new LivingAssetLoader(dependency.File);
-                        success &= loader.Load() != null;
-                    }
-                }
+                List<Dependency> dependencyList = new List<Dependency>(livingAsset.GetDependencies());
+                ProcessDependencyList(dependencyList, successHandler);
+                
+            } else
+            {
+                successHandler(true);
             }
-            return success;
         }
 
-        private LivingAsset OpenFileAndReadLivingAsset()
+        private void ProcessDependencyList(List<Dependency> dependencyList, Action<bool> successHandler)
         {
-            using (FileStream fileStream = File.OpenRead(file))
+            if (dependencyList.Count == 0)
             {
-                bool usesCompression;
-                ReadHeader(fileStream, out usesCompression);
-                if (usesCompression)
+                successHandler(true);
+                return;
+            }
+            Dependency dependency = dependencyList[0];
+            dependencyList.RemoveAt(0);
+
+            if (!LivingAsset.GetRegistry().IsRegistered(dependency.Name))
+            {
+                if (dependencyLoadingPolicy == null || dependencyLoadingPolicy(dependency.Name))
                 {
-                    return ReadFromCompressedStream(fileStream);
+                    LivingAssetLoader loader = new LivingAssetLoader(dependency.Name, livingAssetDatabase, dependencyLoadingPolicy);
+                    loader.Load(livingAsset => {
+                        if (livingAsset == null)
+                        {
+                            // There were problems loading the dependency. Abort.
+                            successHandler(false);
+                        } else
+                        {
+                            ProcessDependencyList(dependencyList, successHandler);
+                        }
+                    });
                 }
                 else
                 {
-                    return ReadFromStream(fileStream);
+                    Debug.LogWarning("Unable to load LivingAsset '" + dependency.Name + "': Rejected by loading policy.");
+                    successHandler(false);
                 }
+            } else
+            {
+                ProcessDependencyList(dependencyList, successHandler);
             }
+
         }
 
+        private void LookupAndReadLivingAsset(Action<LivingAsset> livingAssetHandler)
+        {
+            livingAssetDatabase.Lookup(name, inputStream => {
+                if (inputStream == null) {
+                    OnLivingAssetParsed(null, livingAssetHandler);
+                    return;
+                }
+                bool usesCompression;
+                ReadHeader(inputStream, out usesCompression);
+                LivingAsset livingAsset;
+                if (usesCompression)
+                {
+                    livingAsset = ReadFromCompressedStream(inputStream);
+                }
+                else
+                {
+                    livingAsset = ReadFromStream(inputStream);
+                }
+                OnLivingAssetParsed(livingAsset, livingAssetHandler);
+            });
+        }
+        
         private void ReadHeader(Stream inputStream, out bool usesCompression)
         {
             BinaryReader reader = new BinaryReader(inputStream);
