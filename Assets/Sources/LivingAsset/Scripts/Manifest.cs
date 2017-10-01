@@ -40,6 +40,18 @@ namespace EMP.LivingAsset
 
         [XmlArray]
         public Library[] Libraries;
+
+        [XmlArray]
+        public Dependency[] Dependencies;
+    }
+
+    public class Dependency
+    {
+        [XmlAttribute("name")]
+        public string Name;
+
+        [XmlAttribute("file")]
+        public string File;
     }
 
     public class Library

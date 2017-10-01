@@ -13,9 +13,6 @@ namespace EMP.Test
         {
             LivingAssetLoader loader1 = new LivingAssetLoader(@"EMP.Test.LivingAsset");
             loader1.Load();
-
-            LivingAssetLoader loader2 = new LivingAssetLoader(@"EMP.Test.LivingAsset");
-            loader2.Load();
         }
     }
 }

@@ -12,7 +12,7 @@ namespace EMP.LivingAsset
     public class LivingAssetBuilder : MonoBehaviour
     {
 
-        [MenuItem("Living Asset/Compile C# Sources", validate = false)]
+        [MenuItem("Assets/Living Asset/Compile C# Sources", validate = false)]
         public static void LivingAsset_CompileCsSources()
         {
             if (SelectionHelper.IsDirectorySelected())
@@ -32,7 +32,7 @@ namespace EMP.LivingAsset
             }
         }
 
-        [MenuItem("Living Asset/Build Living Asset", validate = false)]
+        [MenuItem("Assets/Living Asset/Build Living Asset", validate = false)]
         public static void LivingAsset_BuildLivingAsset()
         {
             if (Selection.activeObject != null && Selection.activeObject.GetType().IsAssignableFrom(typeof(DefaultAsset)))
@@ -61,11 +61,11 @@ namespace EMP.LivingAsset
             }
         }
 
-        [MenuItem("Living Asset/Compile C# Sources", validate = true)]
-        [MenuItem("Living Asset/Build Living Asset", validate = true)]
+        [MenuItem("Assets/Living Asset/Compile C# Sources", validate = true)]
+        [MenuItem("Assets/Living Asset/Build Living Asset", validate = true)]
         public static bool IsCurrentSelectionAValidPath()
         {
-            if (Selection.activeObject != null && Selection.activeObject.GetType().IsAssignableFrom(typeof(DefaultAsset)))
+            if (!Application.isPlaying && Selection.activeObject != null && Selection.activeObject.GetType().IsAssignableFrom(typeof(DefaultAsset)))
             {
                 string path = AssetDatabase.GetAssetPath(Selection.activeObject.GetInstanceID());
                 return DllCompiler.IsFileStructureCorrect(path);

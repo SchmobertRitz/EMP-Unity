@@ -33,19 +33,48 @@ namespace EMP.LivingAsset
             }
             alreadyCalled = true;
 
+            Debug.Log("Start loading LivingAsset '" + file + "'");
+
             LivingAsset livingAsset = OpenFileAndReadLivingAsset();
 
             if (!LivingAsset.GetRegistry().IsRegistered(livingAsset.GetName()))
             {
                 LivingAsset.GetRegistry().Register(livingAsset);
-                livingAsset.Load();
-                livingAsset.Initialize();
-                return livingAsset;
+                if (LoadDependencies(livingAsset))
+                {
+                    livingAsset.Load();
+                    livingAsset.Initialize();
+                    Debug.Log("Successfully loaded LivingAsset '" + livingAsset.GetName() + "' from file '" + file + "'");
+
+                    return livingAsset;
+                } else
+                {
+                    Debug.LogWarning("Unable to load dependencies for LivingAsset " + livingAsset.GetName());
+                    return null;
+                }
+
             } else
             {
                 Debug.LogWarning("There is already a LivingAsset loaded with the name " + livingAsset.GetName());
                 return null;
             }
+        }
+
+        private bool LoadDependencies(LivingAsset livingAsset)
+        {
+            bool success = true;
+            if (livingAsset.GetDependencies() != null)
+            {
+                foreach (Dependency dependency in livingAsset.GetDependencies())
+                {
+                    if (!LivingAsset.GetRegistry().IsRegistered(dependency.Name))
+                    {
+                        LivingAssetLoader loader = new LivingAssetLoader(dependency.File);
+                        success &= loader.Load() != null;
+                    }
+                }
+            }
+            return success;
         }
 
         private LivingAsset OpenFileAndReadLivingAsset()

@@ -44,6 +44,17 @@ namespace EMP.LivingAsset
             {
                 return registeredAssets.ContainsKey(name);
             }
+
+            public bool IsRegisteredAndLoaded(string name)
+            {
+                LivingAsset livingAsset;
+                return registeredAssets.TryGetValue(name, out livingAsset) && livingAsset.IsLoaded();
+            }
+        }
+
+        private bool IsLoaded()
+        {
+            return loaded;
         }
 
         private readonly Manifest manifest;
@@ -78,6 +89,11 @@ namespace EMP.LivingAsset
             return manifest.Name;
         }
 
+        internal Dependency[] GetDependencies()
+        {
+            return manifest.Dependencies;
+        }
+
         private void LoadBytesIntoAssembliesAndAssetBundles()
         {
             assemblies = new Assembly[assembliesBytes.Length];
@@ -110,7 +126,13 @@ namespace EMP.LivingAsset
                         throw new Exception("Unable to execute initializer for library " + manifest.Name + ". The initializer class is not in the correct namespace.");
                     }
                     IInitializer initializer = (IInitializer) assemblies[i].CreateInstance(library.Initializer);
-                    initializer.Initialize(manifest, assetBundles); // TODO: Defensive copying
+                    if (initializer == null)
+                    {
+                        throw new LoadingException("Unable to find initializer '" + library.Initializer + "' for LivingAsset '" + manifest.Name + "'");
+                    } else
+                    {
+                        initializer.Initialize(manifest, assetBundles); // TODO: Defensive copying
+                    }
                 }
             }
         }
