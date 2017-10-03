@@ -6,11 +6,26 @@ using UnityEngine;
 using UnityEditor;
 using System.IO;
 using EMP.Editor;
+using System.Security;
+using System.Security.Cryptography;
 
 namespace EMP.LivingAsset
 {
     public class LivingAssetBuilder : MonoBehaviour
     {
+        private static SecureString privateKeyPassword;
+        private static string privateKeyPath = "publickey.xml";
+
+        [MenuItem("Living Asset/Create Public And Private Keys", validate = false)]
+        public static void LivingAsset_CreatePublicAndPrivateKeys()
+        {
+            using(RSACryptoServiceProvider RSA = new RSACryptoServiceProvider())
+            {
+                File.WriteAllText("publickey.xml", RSA.ToXmlString(false));
+                File.WriteAllText("privatekey.xml", RSA.ToXmlString(true));
+                Debug.Log("*** Public and private key successfully generated ***");
+            }
+        }
 
         [MenuItem("Assets/Living Asset/Compile C# Sources", validate = false)]
         public static void LivingAsset_CompileCsSources()
@@ -48,7 +63,13 @@ namespace EMP.LivingAsset
                    
                     DllCompiler dllCompuler = new DllCompiler(path, buildPath, manifest);
                     AssetBundler assetBundler = new AssetBundler(path, buildPath, manifest);
-                    Archiver archiver = new Archiver(path, buildPath, manifest, true);
+                    Archiver archiver = new Archiver(
+                        path,
+                        buildPath,
+                        manifest,
+                        false,
+                        File.Exists(privateKeyPath) ? File.ReadAllText(privateKeyPath) : null
+                    );
 
                     dllCompuler.Compile();
                     assetBundler.GenerateBundle();

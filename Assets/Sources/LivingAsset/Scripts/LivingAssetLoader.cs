@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Security.Cryptography;
 using UnityEngine;
 
 namespace EMP.LivingAsset
@@ -17,15 +18,16 @@ namespace EMP.LivingAsset
         private readonly string name;
         private readonly ILivingAssetDatabase livingAssetDatabase;
         private Func<string, bool> dependencyLoadingPolicy;
-
+        private readonly string rsaKeyXml;
 
         private bool alreadyCalled;
 
-        public LivingAssetLoader(string name, ILivingAssetDatabase livingAssetDatabase, Func<string, bool> dependencyLoadingPolicy = null)
+        public LivingAssetLoader(string name, ILivingAssetDatabase livingAssetDatabase, Func<string, bool> dependencyLoadingPolicy = null, string rsaKeyXml = null)
         {
             this.name = name;
             this.livingAssetDatabase = livingAssetDatabase;
             this.dependencyLoadingPolicy = dependencyLoadingPolicy;
+            this.rsaKeyXml = rsaKeyXml;
         }
         
         public void Load(Action<LivingAsset> livingAssetHandler = null)
@@ -38,7 +40,7 @@ namespace EMP.LivingAsset
 
             Debug.Log("Start loading LivingAsset '" + name + "'");
 
-            LookupAndReadLivingAsset(livingAssetHandler);
+            LookupAndParseLivingAsset(livingAssetHandler);
         }
 
         private void OnLivingAssetParsed(LivingAsset livingAsset, Action<LivingAsset> livingAssetHandler)
@@ -104,7 +106,7 @@ namespace EMP.LivingAsset
             {
                 if (dependencyLoadingPolicy == null || dependencyLoadingPolicy(dependency.Name))
                 {
-                    LivingAssetLoader loader = new LivingAssetLoader(dependency.Name, livingAssetDatabase, dependencyLoadingPolicy);
+                    LivingAssetLoader loader = new LivingAssetLoader(dependency.Name, livingAssetDatabase, dependencyLoadingPolicy, rsaKeyXml);
                     loader.Load(livingAsset => {
                         if (livingAsset == null)
                         {
@@ -128,7 +130,7 @@ namespace EMP.LivingAsset
 
         }
 
-        private void LookupAndReadLivingAsset(Action<LivingAsset> livingAssetHandler)
+        private void LookupAndParseLivingAsset(Action<LivingAsset> livingAssetHandler)
         {
             livingAssetDatabase.Lookup(name, inputStream => {
                 if (inputStream == null) {
@@ -149,7 +151,42 @@ namespace EMP.LivingAsset
                 OnLivingAssetParsed(livingAsset, livingAssetHandler);
             });
         }
-        
+
+        private Stream WrapInDecryptionStream(Stream inputStream)
+        {
+            BinaryReader reader = new BinaryReader(inputStream);
+
+            int encryptedSymmetricKeyLen = reader.ReadInt32();
+            byte[] encryptedSymmetricKey = reader.ReadBytes(encryptedSymmetricKeyLen);
+
+            int encryptedSymmetricIVLen = reader.ReadInt32();
+            byte[] encryptedSymmetricIV = reader.ReadBytes(encryptedSymmetricIVLen);
+
+            if (rsaKeyXml == null)
+            {
+                if (encryptedSymmetricKey.Length == 0 && encryptedSymmetricIV.Length == 0)
+                {
+                    return inputStream;
+                }
+                else
+                {
+                    throw new LoadingException("Unable to decrypt LivingAsset because no public key was given.");
+                }
+            }
+            else if (encryptedSymmetricKey.Length == 0 || encryptedSymmetricIV.Length == 0) {
+                throw new LoadingException("Loading LivingAsset rejected: LivingAsset seems to be unencrypted but a public key was given to loader.");
+            }
+
+            RSACryptoServiceProvider RSA = new RSACryptoServiceProvider();
+            RSA.FromXmlString(rsaKeyXml);
+
+            RijndaelManaged AES = new RijndaelManaged();
+            AES.Key = RSA.Decrypt(encryptedSymmetricKey, false);
+            AES.IV = RSA.Decrypt(encryptedSymmetricIV, false);
+
+            return new CryptoStream(inputStream, AES.CreateDecryptor(), CryptoStreamMode.Read);
+        }
+
         private void ReadHeader(Stream inputStream, out bool usesCompression)
         {
             BinaryReader reader = new BinaryReader(inputStream);
@@ -178,7 +215,7 @@ namespace EMP.LivingAsset
 
         private LivingAsset ReadFromStream(Stream inputStream)
         {
-            using (BinaryReader reader = new BinaryReader(inputStream))
+            using (BinaryReader reader = new BinaryReader(WrapInDecryptionStream(inputStream)))
             {
                 return new LivingAsset(
                     Manifest.CreateFromBytes(ReadLengthPrefixedBytes(reader)),
