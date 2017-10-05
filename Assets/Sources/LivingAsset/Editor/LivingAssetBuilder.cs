@@ -14,7 +14,7 @@ namespace EMP.LivingAsset
     public class LivingAssetBuilder : MonoBehaviour
     {
         private static SecureString privateKeyPassword;
-        private static string privateKeyPath = "publickey.xml";
+        private static string privateKeyPath = "privatekey.xml";
 
         [MenuItem("Living Asset/Create Public And Private Keys", validate = false)]
         public static void LivingAsset_CreatePublicAndPrivateKeys()

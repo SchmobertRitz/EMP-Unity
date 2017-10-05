@@ -31,73 +31,77 @@ namespace EMP.LivingAsset
 
         public void GenerateArchive()
         {
+            // Write payload in a separat file
+            string tmpFile = Path.Combine(buildPath, manifest.Name + ".tmp");
+            using (FileStream fileOutputStream = File.Create(tmpFile))
+            {
+                WriteDataCompressedInFile(fileOutputStream);
+            }
+
+            byte[] signingData = new byte[0];
+            if (rsaKeyXml != null)
+            {
+                // Generate signing hash of content of temp file
+                using (RSACryptoServiceProvider RSA = new RSACryptoServiceProvider())
+                {
+                    RSA.FromXmlString(rsaKeyXml);
+                    if (RSA.PublicOnly)
+                    {
+                        throw new Exception("Missing private key info for signing the content");
+                    }
+                    
+                    using (FileStream stream = File.OpenRead(tmpFile))
+                    {
+                        SHA1CryptoServiceProvider hasher = new SHA1CryptoServiceProvider();
+                        byte[] hash = hasher.ComputeHash(stream);
+                        signingData = RSA.SignData(hash, new SHA1CryptoServiceProvider());
+                    }
+                }   
+            }
+
             using (FileStream fileOutputStream = File.Create(Path.Combine(buildPath, manifest.Name + ".LivingAsset")))
             {
-                WriteHeader(fileOutputStream);
+                using(BinaryWriter writer = new BinaryWriter(fileOutputStream))
+                {
+                    writer.Write(LivingAssetLoader.LIVING_ASSET_HEADER.ToCharArray());
+                    writer.Write(useCompression);
+                    writer.Write(signingData.Length);
+                    writer.Write(signingData);
 
-                if (useCompression)
-                {
-                    WriteDataCompressedInFile(fileOutputStream);
-                } else
-                {
-                    WriteDataInFile(fileOutputStream);
+                    using (FileStream fileInputStream = File.OpenRead(tmpFile))
+                    {
+                        byte[] buffer = new byte[1024];
+                        int read = 0;
+                        while ((read = fileInputStream.Read(buffer, 0, buffer.Length)) > 0)
+                        {
+                            writer.Write(buffer, 0, read);
+                        }
+                    }
                 }
             }
         }
 
-        private void WriteHeader(FileStream fileOutputStream)
-        {
-            BinaryWriter writer = new BinaryWriter(fileOutputStream);
-            writer.Write(LivingAssetLoader.LIVING_ASSET_HEADER.ToCharArray());
-            writer.Write(useCompression);
-            // do not close the stream
-        }
-
         private void WriteDataCompressedInFile(Stream outputStream)
         {
-            using (GZipStream compressionStream = new GZipStream(outputStream, CompressionMode.Compress))
+            if (useCompression)
             {
-                WriteDataInFile(compressionStream);
+                using (GZipStream compressionStream = new GZipStream(outputStream, CompressionMode.Compress))
+                {
+                    WriteDataInFile(compressionStream);
+                }
+            } else
+            {
+                WriteDataInFile(outputStream);
             }
         }
 
         private void WriteDataInFile(Stream outputStream)
         {
-            using (BinaryWriter writer = new BinaryWriter(WrapInEncryptionStream(outputStream)))
+            using (BinaryWriter writer = new BinaryWriter(outputStream))
             {
                 WriteFile(Path.Combine(buildPath, Manifest.FILE_NAME), writer);
                 WriteLibraries(buildPath, manifest.Libraries, writer);
                 WriteAssetBundles(buildPath, manifest.AssetBundles, writer);
-            }
-        }
-
-        private Stream WrapInEncryptionStream(Stream outputStream)
-        {
-            if (rsaKeyXml != null)
-            {
-                RSACryptoServiceProvider RSA = new RSACryptoServiceProvider();
-                RSA.FromXmlString(rsaKeyXml);
-
-                RijndaelManaged AES = new RijndaelManaged();
-                byte[] encryptedSymmetricKey = RSA.Encrypt(AES.Key, false);
-                byte[] encryptedSymmetricIV = RSA.Encrypt(AES.IV, false);
-
-                BinaryWriter writer = new BinaryWriter(outputStream);
-
-                writer.Write(encryptedSymmetricKey.Length);
-                writer.Write(encryptedSymmetricKey);
-                writer.Write(encryptedSymmetricIV.Length);
-                writer.Write(encryptedSymmetricIV);
-
-                return new CryptoStream(outputStream, AES.CreateEncryptor(), CryptoStreamMode.Write);
-            }
-            else {
-                BinaryWriter writer = new BinaryWriter(outputStream);
-
-                writer.Write(0);
-                writer.Write(0);
-
-                return outputStream;
             }
         }
 
@@ -124,7 +128,7 @@ namespace EMP.LivingAsset
             writer.Write((int) new FileInfo(filename).Length);
             using (FileStream stream = File.OpenRead(filename))
             {
-                byte[] buffer = new byte[512];
+                byte[] buffer = new byte[1024];
                 int read = 0;
                 while ((read = stream.Read(buffer, 0, buffer.Length)) > 0)
                 {

@@ -13,7 +13,13 @@ namespace EMP.Test
         private void Start()
         {
             ILivingAssetDatabase database = new LocalLivingAssetDatabase();
-            LivingAssetLoader loader1 = new LivingAssetLoader(@"EMP.Test", database, dep => { Debug.Log(dep); return true; }, File.ReadAllText("privatekey.xml"));
+            LivingAssetLoader loader1 = new LivingAssetLoader(
+                @"EMP.Test",
+                database,
+                LivingAssetLoader.ESignatureCheckPolicy.SkipVerfication,
+                File.ReadAllText("publickey.xml"),
+                dep => { Debug.Log("Dep.: " + dep); return true; }
+            );
             loader1.Load();
         }
     }

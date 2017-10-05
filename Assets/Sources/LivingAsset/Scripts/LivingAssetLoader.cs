@@ -13,21 +13,32 @@ namespace EMP.LivingAsset
 {
     public class LivingAssetLoader
     {
+        public enum ESignatureCheckPolicy
+        {
+            SignatureMustAlwaysBePresentAndVerified,
+            SignatureMustBeVerifiedIfPresent,
+            SkipVerfication
+        }
+
         public const string LIVING_ASSET_HEADER = "/* EMP LivingAsset - Version 1.0.0 */\n";
         public const string LIVING_ASSET_FILE_EXTENSION = "LivingAsset";
+
         private readonly string name;
         private readonly ILivingAssetDatabase livingAssetDatabase;
-        private Func<string, bool> dependencyLoadingPolicy;
+        private readonly Func<string, bool> dependencyLoadingPolicy;
         private readonly string rsaKeyXml;
+        private readonly ESignatureCheckPolicy signatureCheckPolicy;
 
         private bool alreadyCalled;
 
-        public LivingAssetLoader(string name, ILivingAssetDatabase livingAssetDatabase, Func<string, bool> dependencyLoadingPolicy = null, string rsaKeyXml = null)
+
+        public LivingAssetLoader(string name, ILivingAssetDatabase livingAssetDatabase, ESignatureCheckPolicy signatureCheckPolicy, string rsaKeyXml = null, Func < string, bool> dependencyLoadingPolicy = null)
         {
             this.name = name;
             this.livingAssetDatabase = livingAssetDatabase;
             this.dependencyLoadingPolicy = dependencyLoadingPolicy;
             this.rsaKeyXml = rsaKeyXml;
+            this.signatureCheckPolicy = signatureCheckPolicy;
         }
         
         public void Load(Action<LivingAsset> livingAssetHandler = null)
@@ -106,7 +117,7 @@ namespace EMP.LivingAsset
             {
                 if (dependencyLoadingPolicy == null || dependencyLoadingPolicy(dependency.Name))
                 {
-                    LivingAssetLoader loader = new LivingAssetLoader(dependency.Name, livingAssetDatabase, dependencyLoadingPolicy, rsaKeyXml);
+                    LivingAssetLoader loader = new LivingAssetLoader(dependency.Name, livingAssetDatabase, signatureCheckPolicy, rsaKeyXml, dependencyLoadingPolicy);
                     loader.Load(livingAsset => {
                         if (livingAsset == null)
                         {
@@ -139,6 +150,7 @@ namespace EMP.LivingAsset
                 }
                 bool usesCompression;
                 ReadHeader(inputStream, out usesCompression);
+                VerifySignature(inputStream);
                 LivingAsset livingAsset;
                 if (usesCompression)
                 {
@@ -152,39 +164,45 @@ namespace EMP.LivingAsset
             });
         }
 
-        private Stream WrapInDecryptionStream(Stream inputStream)
+        private void VerifySignature(Stream inputStream)
         {
             BinaryReader reader = new BinaryReader(inputStream);
+            int signatureLen = reader.ReadInt32();
+            byte[] signingData = reader.ReadBytes(signatureLen);
 
-            int encryptedSymmetricKeyLen = reader.ReadInt32();
-            byte[] encryptedSymmetricKey = reader.ReadBytes(encryptedSymmetricKeyLen);
-
-            int encryptedSymmetricIVLen = reader.ReadInt32();
-            byte[] encryptedSymmetricIV = reader.ReadBytes(encryptedSymmetricIVLen);
-
-            if (rsaKeyXml == null)
+            if (signatureCheckPolicy == ESignatureCheckPolicy.SignatureMustAlwaysBePresentAndVerified)
             {
-                if (encryptedSymmetricKey.Length == 0 && encryptedSymmetricIV.Length == 0)
+                if (signingData.Length == 0)
                 {
-                    return inputStream;
+                    throw new LoadingException("Unable to load '" + name + "': Signature check is mandatory but LivingAsset is not signed.");
                 }
-                else
+                if (rsaKeyXml == null)
                 {
-                    throw new LoadingException("Unable to decrypt LivingAsset because no public key was given.");
+                    throw new LoadingException("Unable to load '" + name + "': Signature check is mandatory but no RSA key is given for verifying.");
                 }
             }
-            else if (encryptedSymmetricKey.Length == 0 || encryptedSymmetricIV.Length == 0) {
-                throw new LoadingException("Loading LivingAsset rejected: LivingAsset seems to be unencrypted but a public key was given to loader.");
+
+            if (signatureCheckPolicy == ESignatureCheckPolicy.SignatureMustBeVerifiedIfPresent && signingData.Length != 0)
+            {
+                if (rsaKeyXml == null)
+                {
+                    throw new LoadingException("Unable to load '" + name + "': Signature is present but no RSA key is given for verifying.");
+                }
+
+                long position = inputStream.Position;
+
+                using (RSACryptoServiceProvider RSA = new RSACryptoServiceProvider())
+                {
+                    RSA.FromXmlString(rsaKeyXml);
+                    SHA1CryptoServiceProvider hasher = new SHA1CryptoServiceProvider();
+                    byte[] hash = hasher.ComputeHash(inputStream);
+                    if (!RSA.VerifyData(hash, new SHA1CryptoServiceProvider(), signingData))
+                    {
+                        throw new LoadingException("Unable to load '" + name + "': Signature does not match the content of the LivingAsset or public key does not apply.");
+                    }
+                }
+                inputStream.Seek(position, SeekOrigin.Begin);
             }
-
-            RSACryptoServiceProvider RSA = new RSACryptoServiceProvider();
-            RSA.FromXmlString(rsaKeyXml);
-
-            RijndaelManaged AES = new RijndaelManaged();
-            AES.Key = RSA.Decrypt(encryptedSymmetricKey, false);
-            AES.IV = RSA.Decrypt(encryptedSymmetricIV, false);
-
-            return new CryptoStream(inputStream, AES.CreateDecryptor(), CryptoStreamMode.Read);
         }
 
         private void ReadHeader(Stream inputStream, out bool usesCompression)
@@ -215,7 +233,7 @@ namespace EMP.LivingAsset
 
         private LivingAsset ReadFromStream(Stream inputStream)
         {
-            using (BinaryReader reader = new BinaryReader(WrapInDecryptionStream(inputStream)))
+            using (BinaryReader reader = new BinaryReader(inputStream))
             {
                 return new LivingAsset(
                     Manifest.CreateFromBytes(ReadLengthPrefixedBytes(reader)),
