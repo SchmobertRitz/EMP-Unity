@@ -50,6 +50,15 @@ namespace EMP.LivingAsset
                 LivingAsset livingAsset;
                 return registeredAssets.TryGetValue(name, out livingAsset) && livingAsset.IsLoaded();
             }
+
+            public LivingAsset Get(string name)
+            {
+                if (!IsRegistered(name))
+                {
+                    throw new Exception("LivingAsset " + name + " is not registered.");
+                }
+                return registeredAssets[name];
+             }
         }
 
         private bool IsLoaded()
@@ -87,6 +96,19 @@ namespace EMP.LivingAsset
         public string GetName()
         {
             return manifest.Name;
+        }
+
+        public Type FindType(string name)
+        {
+            foreach(Assembly assembly in assemblies)
+            {
+                try
+                {
+                    return assembly.GetType(name);
+                }
+                catch (Exception e) { /* ignore */ } 
+            }
+            return null;
         }
 
         internal Dependency[] GetDependencies()

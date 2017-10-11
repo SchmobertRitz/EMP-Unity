@@ -1,0 +1,37 @@
+ManifestFileVersion: 0
+CRC: 2491669659
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: 75fea209453c2540840e09a36acda64b
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: cc5828812c0b865a92271840fa35e0df
+HashAppended: 0
+ClassTypes:
+- Class: 1
+  Script: {instanceID: 0}
+- Class: 4
+  Script: {instanceID: 0}
+- Class: 21
+  Script: {instanceID: 0}
+- Class: 23
+  Script: {instanceID: 0}
+- Class: 33
+  Script: {instanceID: 0}
+- Class: 43
+  Script: {instanceID: 0}
+- Class: 48
+  Script: {instanceID: 0}
+- Class: 49
+  Script: {instanceID: 0}
+- Class: 65
+  Script: {instanceID: 0}
+- Class: 114
+  Script: {fileID: 1710245993, guid: 0ada38702d0e9ee419f749644fa1ef0b, type: 3}
+- Class: 115
+  Script: {instanceID: 0}
+Assets:
+- Assets/Tests/LivingAsset/EMP.Test/RotatingCube.prefab
+- Assets/Tests/LivingAsset/EMP.Test/Manifest.xml
+Dependencies: []

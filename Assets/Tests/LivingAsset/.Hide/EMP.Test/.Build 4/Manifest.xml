@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<Manifest name="EMP.Test" description="Das ist ein Test">
+  <AssetBundles>
+    <AssetBundle file="AssetBundle/EMP.Test.asset" />
+  </AssetBundles>
+  <Libraries>
+    <Library file="EMP.Test.dll" initializer="EMP.Test.TestInitializer" />
+  </Libraries>
+  <Dependencies>
+    <Dependency name="EMP.Test2" />
+  </Dependencies>
+</Manifest>

@@ -18,6 +18,7 @@ namespace EMP.LivingAsset
         private readonly string path;
         private readonly Manifest manifest;
         private readonly string buildPath;
+        private readonly string libName;
 
         public static bool IsFileStructureCorrect(string path)
         {
@@ -26,22 +27,16 @@ namespace EMP.LivingAsset
                     && File.Exists(Path.Combine(path, Manifest.FILE_NAME));
         }
 
-        public DllCompiler(string path, string buildPath, Manifest manifest)
+        public DllCompiler(string path, string buildPath, string libName, Manifest manifest)
         {
-            if (!IsFileStructureCorrect(path))
-            {
-                throw new ArgumentException();
-            }
             this.path = path;
             this.manifest = manifest;
             this.buildPath = buildPath;
+            this.libName = libName;
         }
-        
+
         public void Compile()
         {
-            List<string> sourceFiles = FilesHelper.CollectFiles(path, file => !file.StartsWith("-") && file.EndsWith(".cs"));
-
-            string libName = manifest.Libraries[0].File;
             CompilerParameters compilerParameters = new CompilerParameters();
             compilerParameters.GenerateExecutable = false;
             compilerParameters.OutputAssembly = libName;
@@ -56,8 +51,8 @@ namespace EMP.LivingAsset
 
             CodeDomProvider codeDomProvider = new CSharpCodeProvider(compilerOptions);
 
-            CompilerResults results = codeDomProvider.CompileAssemblyFromFile(compilerParameters, sourceFiles.ToArray());
-
+            CompilerResults results = CompileFromSourceFiles(compilerParameters, codeDomProvider);
+            
             if (results.Errors.HasErrors)
             {
                 foreach (string err in results.Output)
@@ -67,8 +62,19 @@ namespace EMP.LivingAsset
             }
             else
             {
-                File.Move(results.PathToAssembly, Path.Combine(buildPath, libName));
+                File.Move(results.PathToAssembly, GetOutputFilePath());
             }
+        }
+
+        private CompilerResults CompileFromSourceFiles(CompilerParameters compilerParameters, CodeDomProvider codeDomProvider)
+        {
+            List<string> sourceFiles = FilesHelper.CollectFiles(path, file => !file.StartsWith("-") && file.EndsWith(".cs"));
+            return codeDomProvider.CompileAssemblyFromFile(compilerParameters, sourceFiles.ToArray());
+        }
+
+        public string GetOutputFilePath()
+        {
+            return Path.Combine(buildPath, libName);
         }
     }
 }

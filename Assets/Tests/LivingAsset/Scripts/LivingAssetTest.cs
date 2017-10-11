@@ -12,6 +12,7 @@ namespace EMP.Test
     {
         private void Start()
         {
+            
             ILivingAssetDatabase database = new LocalLivingAssetDatabase();
             LivingAssetLoader loader1 = new LivingAssetLoader(
                 @"EMP.Test",
@@ -21,6 +22,9 @@ namespace EMP.Test
                 dep => { Debug.Log("Dep.: " + dep); return true; }
             );
             loader1.Load();
+            
+            // EMP.Test2.Api.AddRotateComponent(Camera.main.gameObject);
+            //Test2.Api.GetRotateComponent(Camera.main.gameObject).enabled = false;
         }
     }
 }
