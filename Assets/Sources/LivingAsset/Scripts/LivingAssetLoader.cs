@@ -238,6 +238,7 @@ namespace EMP.LivingAsset
                 return new LivingAsset(
                     Manifest.CreateFromBytes(ReadLengthPrefixedBytes(reader)),
                     ReadByteArrays(reader), // Assemblies
+                    ReadByteArrays(reader), // APIs
                     ReadByteArrays(reader) // AssetBundles
                 );
             }

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using UnityEngine;
 
 namespace EMP.LivingAsset
 {
@@ -68,6 +69,7 @@ namespace EMP.LivingAsset
 
         private readonly Manifest manifest;
         private byte[][] assembliesBytes;
+        private byte[][] apiBytes;
         private byte[][] assetBundleBytes;
         
         private Assembly[] assemblies;
@@ -75,10 +77,11 @@ namespace EMP.LivingAsset
 
         private bool loaded;
         
-        internal LivingAsset(Manifest manifest, byte[][] assembliesBytes, byte[][] assetBundleBytes)
+        internal LivingAsset(Manifest manifest, byte[][] assembliesBytes, byte[][] apiBytes, byte[][] assetBundleBytes)
         {
             this.manifest = manifest;
             this.assembliesBytes = assembliesBytes;
+            this.apiBytes = apiBytes;
             this.assetBundleBytes = assetBundleBytes;
         }
 
@@ -111,7 +114,7 @@ namespace EMP.LivingAsset
             return null;
         }
 
-        internal Dependency[] GetDependencies()
+        internal List<Dependency> GetDependencies()
         {
             return manifest.Dependencies;
         }
@@ -138,22 +141,28 @@ namespace EMP.LivingAsset
         internal void Initialize()
         {
             LivingAssetPolicy policy = new LivingAssetPolicy(manifest);
-            for(int i=0; i< manifest.Libraries.Length; i++)
+
+            foreach(Assembly assembly in assemblies)
             {
-                Library library = manifest.Libraries[i];
-                if (!string.IsNullOrEmpty(library.Initializer))
+                foreach(Type type in assembly.GetTypes())
                 {
-                    if (!policy.IsNamespaceValid(library.Initializer))
+                    if (typeof(IInitializer).IsAssignableFrom(type))
                     {
-                        throw new Exception("Unable to execute initializer for library " + manifest.Name + ". The initializer class is not in the correct namespace.");
-                    }
-                    IInitializer initializer = (IInitializer) assemblies[i].CreateInstance(library.Initializer);
-                    if (initializer == null)
-                    {
-                        throw new LoadingException("Unable to find initializer '" + library.Initializer + "' for LivingAsset '" + manifest.Name + "'");
-                    } else
-                    {
-                        initializer.Initialize(manifest, assetBundles); // TODO: Defensive copying
+                        if (!policy.IsNamespaceValid(type.FullName))
+                        {
+                            Debug.LogWarning("Type " + type.FullName + " in LivingAsset " + manifest.Name + " implements IInitializer but does not has the correct namespace. Ignoring.");
+                        } else
+                        {
+                            IInitializer initializer = (IInitializer)Activator.CreateInstance(type);
+                            if (initializer == null)
+                            {
+                                throw new LoadingException("Unable to instantiate initializer '" + type.FullName + "' for LivingAsset '" + manifest.Name + "'. Make sure the class has a no-arg constructor.");
+                            }
+                            else
+                            {
+                                initializer.Initialize(manifest, assetBundles); // TODO: Defensive copying
+                            }
+                        }
                     }
                 }
             }

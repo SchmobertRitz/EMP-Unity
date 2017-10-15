@@ -25,19 +25,33 @@ namespace EMP.LivingAsset
 
         public void GenerateBundle()
         {
-            List<string> assetFiles = FilesHelper.CollectFiles(path, 
-                file => !file.EndsWith(".meta") && !file.EndsWith(".dll") && !file.EndsWith(".cs"));
+            List<string> bundles = new List<string>();
+            if (Directory.Exists(path))
+            {
+                if (Directory.GetFiles(path).Length != 0)
+                {
+                    bundles.Add("");
+                }
+                else
+                {
+                    bundles.AddRange(Directory.GetDirectories(path));
+                }
 
-            Path.GetDirectoryName(manifest.AssetBundles[0].File);
-            
-            AssetBundleBuild[] buildMap = new AssetBundleBuild[1];
-            buildMap[0].assetBundleName = Path.GetFileName(manifest.AssetBundles[0].File);
-            buildMap[0].assetNames = assetFiles.ToArray();
+                foreach (string bundle in bundles)
+                {
+                    List<string> assetFiles = FilesHelper.CollectFiles(Path.Combine(path, bundle),
+                        file => !file.EndsWith(".meta") && !file.EndsWith(".dll") && !file.EndsWith(".cs"));
 
-            string assetBundlePath = Path.Combine(buildPath, Path.GetDirectoryName(manifest.AssetBundles[0].File));
-            Directory.CreateDirectory(assetBundlePath);
+                    string destPath = Path.Combine(buildPath, bundle);
+                    Directory.CreateDirectory(destPath);
 
-            BuildPipeline.BuildAssetBundles(assetBundlePath, buildMap, BuildAssetBundleOptions.None, BuildTarget.StandaloneWindows);
+                    AssetBundleBuild[] buildMap = new AssetBundleBuild[1];
+                    buildMap[0].assetBundleName = "bundle.asset";
+                    buildMap[0].assetNames = assetFiles.ToArray();
+
+                    BuildPipeline.BuildAssetBundles(destPath, buildMap, BuildAssetBundleOptions.None, BuildTarget.StandaloneWindows);
+                }
+            }
         }
     }
 }

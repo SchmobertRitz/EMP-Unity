@@ -8,7 +8,6 @@ using System.Reflection;
 using System;
 using System.IO;
 using UnityEngine;
-using UnityEditor;
 using Microsoft.CSharp;
 
 namespace EMP.LivingAsset
@@ -18,7 +17,8 @@ namespace EMP.LivingAsset
         private readonly string path;
         private readonly Manifest manifest;
         private readonly string buildPath;
-        private readonly string libName;
+
+        public const string LIBRARY_PATH = "Libs";
 
         public static bool IsFileStructureCorrect(string path)
         {
@@ -27,19 +27,18 @@ namespace EMP.LivingAsset
                     && File.Exists(Path.Combine(path, Manifest.FILE_NAME));
         }
 
-        public DllCompiler(string path, string buildPath, string libName, Manifest manifest)
+        public DllCompiler(string path, string buildPath, Manifest manifest)
         {
             this.path = path;
             this.manifest = manifest;
             this.buildPath = buildPath;
-            this.libName = libName;
         }
 
         public void Compile()
         {
             CompilerParameters compilerParameters = new CompilerParameters();
             compilerParameters.GenerateExecutable = false;
-            compilerParameters.OutputAssembly = libName;
+            compilerParameters.OutputAssembly = GetLibName();
             compilerParameters.IncludeDebugInformation = false;
 
             foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
@@ -62,6 +61,11 @@ namespace EMP.LivingAsset
             }
             else
             {
+                if (File.Exists(GetOutputFilePath()))
+                {
+                    File.Delete(GetOutputFilePath());
+                }
+                Directory.CreateDirectory(buildPath);
                 File.Move(results.PathToAssembly, GetOutputFilePath());
             }
         }
@@ -74,7 +78,12 @@ namespace EMP.LivingAsset
 
         public string GetOutputFilePath()
         {
-            return Path.Combine(buildPath, libName);
+            return Path.Combine(buildPath, GetLibName());
+        }
+
+        private string GetLibName()
+        {
+            return manifest.Name + ".dll";
         }
     }
 }

@@ -36,39 +36,58 @@ namespace EMP.LivingAsset
                 if (DllCompiler.IsFileStructureCorrect(path))
                 {
                     string manifestPath = string.Format(@"{0}/{1}", path, Manifest.FILE_NAME);
-                    string buildPath = path;
+                    string buildPath = string.Format(@"{0}/{1}", path, DllCompiler.LIBRARY_PATH);
 
                     Manifest manifest = Manifest.CreateFromPath(manifestPath);
-                    DllCompiler dllCompiler = new DllCompiler(path, buildPath, manifest.Libraries[0].File, manifest);
+                    DllCompiler dllCompiler = new DllCompiler(path, buildPath, manifest);
                     dllCompiler.Compile();
                     AssetDatabase.Refresh();
                     Debug.Log("*** Finished Compiling C# Sources ***");
                 }
             }
         }
+        public const string ASSETS_PATH = "Assets";
+        public const string API_PATH = "Api";
 
         [MenuItem("Assets/Living Asset/Build Living Asset", validate = false)]
         public static void LivingAsset_BuildLivingAsset()
         {
             if (Selection.activeObject != null && Selection.activeObject.GetType().IsAssignableFrom(typeof(DefaultAsset)))
             {
-                string path = AssetDatabase.GetAssetPath(Selection.activeObject.GetInstanceID());
-                if (DllCompiler.IsFileStructureCorrect(path))
+                string sourcePath = AssetDatabase.GetAssetPath(Selection.activeObject.GetInstanceID());
+                if (DllCompiler.IsFileStructureCorrect(sourcePath))
                 {
-                    string manifestPath = string.Format(@"{0}/{1}", path, Manifest.FILE_NAME);
-                    string buildPath = FilesHelper.CreateBuildPath(path);
+                    string manifestPath = string.Format(@"{0}/{1}", sourcePath, Manifest.FILE_NAME);
+                    string buildPath = FilesHelper.CreateBuildPath(sourcePath);
+
+                    string libsBuildPath = Path.Combine(buildPath, DllCompiler.LIBRARY_PATH);
+                    string libsSourcePath = Path.Combine(sourcePath, DllCompiler.LIBRARY_PATH);
+
+                    string apiBuildPath = Path.Combine(buildPath, API_PATH);
+
+                    string assetBundleBuildPath = Path.Combine(buildPath, ASSETS_PATH);
+                    string assetBundleSourcePath = Path.Combine(sourcePath, ASSETS_PATH);
+
+                    Directory.CreateDirectory(libsBuildPath);
+                    Directory.CreateDirectory(assetBundleBuildPath);
 
                     Manifest manifest = Manifest.CreateFromPath(manifestPath);
-                    File.Copy(manifestPath, string.Format(@"{0}/{1}", buildPath, Manifest.FILE_NAME));
-                    string apiPath = Path.Combine(buildPath, "Api");
-                    string libName = manifest.Libraries[0].File;
 
-                    DllCompiler dllCompiler = new DllCompiler(path, buildPath, libName, manifest);
-                    ApiGenerator apiGenerator = new ApiGenerator(dllCompiler.GetOutputFilePath(), apiPath, manifest);
-                    DllCompiler apiCompiler = new DllCompiler(apiPath, buildPath, "api." + libName, manifest);
-                    AssetBundler assetBundler = new AssetBundler(path, buildPath, manifest);
+                    // Copy Manifest
+                    File.Copy(manifestPath, string.Format(@"{0}/{1}", buildPath, Manifest.FILE_NAME));
+
+                    // Generate Sources and Libs 
+                    DllCompiler dllCompiler = new DllCompiler(sourcePath, libsSourcePath, manifest);
+                    ApiGenerator apiGenerator = new ApiGenerator(dllCompiler.GetOutputFilePath(), apiBuildPath, manifest);
+                    FilesHelper.CollectFiles(libsSourcePath, file => file.EndsWith(".dll")).ForEach(file => File.Copy(file, Path.Combine(libsBuildPath, Path.GetFileName(file))));
+
+                    // Generate Living Asset
+                    AssetBundler assetBundler = new AssetBundler(assetBundleSourcePath, assetBundleBuildPath, manifest);
+
                     Archiver archiver = new Archiver(
-                        path,
+                        libsBuildPath,
+                        apiBuildPath,
+                        assetBundleBuildPath,
                         buildPath,
                         manifest,
                         false,
@@ -76,8 +95,8 @@ namespace EMP.LivingAsset
                     );
 
                     dllCompiler.Compile();
+                    AssetDatabase.Refresh();
                     apiGenerator.GenerateApi();
-                    apiCompiler.Compile();
                     assetBundler.GenerateBundle();
                     archiver.GenerateArchive();
 

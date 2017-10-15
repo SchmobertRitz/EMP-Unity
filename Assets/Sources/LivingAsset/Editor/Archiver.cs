@@ -16,13 +16,17 @@ namespace EMP.LivingAsset
     {
         private readonly string buildPath;
         private readonly Manifest manifest;
-        private readonly string path;
+        private readonly string libsPath;
+        private readonly string apiPath;
+        private readonly string assetsPath;
         private readonly bool useCompression;
         private readonly string rsaKeyXml;
 
-        public Archiver(string path, string buildPath, Manifest manifest, bool useCompression = true, string rsaKeyXml = null)
+        public Archiver(string libsPath, string apiPath, string assetsPath, string buildPath, Manifest manifest, bool useCompression = true, string rsaKeyXml = null)
         {
-            this.path = path;
+            this.libsPath = libsPath;
+            this.apiPath = apiPath;
+            this.assetsPath = assetsPath;
             this.buildPath = buildPath;
             this.manifest = manifest;
             this.useCompression = useCompression;
@@ -87,42 +91,34 @@ namespace EMP.LivingAsset
             {
                 using (GZipStream compressionStream = new GZipStream(outputStream, CompressionMode.Compress))
                 {
-                    WriteDataInFile(compressionStream);
+                    WriteDataInArchive(compressionStream);
                 }
             } else
             {
-                WriteDataInFile(outputStream);
+                WriteDataInArchive(outputStream);
             }
         }
 
-        private void WriteDataInFile(Stream outputStream)
+        private void WriteDataInArchive(Stream outputStream)
         {
             using (BinaryWriter writer = new BinaryWriter(outputStream))
             {
                 WriteFile(Path.Combine(buildPath, Manifest.FILE_NAME), writer);
-                WriteLibraries(buildPath, manifest.Libraries, writer);
-                WriteAssetBundles(buildPath, manifest.AssetBundles, writer);
+                WriteListOfFiles(buildPath, FilesHelper.CollectFiles(libsPath, file => file.EndsWith(".dll")), writer);
+                WriteListOfFiles(buildPath, FilesHelper.CollectFiles(apiPath, file => file.EndsWith(".cs")), writer);
+                WriteListOfFiles(buildPath, FilesHelper.CollectFiles(assetsPath, file => Path.GetFileName(file).Equals("bundle.asset")), writer);
             }
         }
 
-        private void WriteLibraries(string buildPath, Library[] libraries, BinaryWriter writer)
+        private void WriteListOfFiles(string buildPath, List<string> files, BinaryWriter writer)
         {
-            writer.Write(libraries.Length);
-            foreach (Library library in libraries)
+            writer.Write(files.Count);
+            foreach (string library in files)
             {
-                WriteFile(Path.Combine(buildPath, library.File), writer);
+                WriteFile(library, writer);
             }
         }
-
-        private void WriteAssetBundles(string buildPath, AssetBundle[] assetBundles, BinaryWriter writer)
-        {
-            writer.Write(assetBundles.Length);
-            foreach (AssetBundle assetBundle in assetBundles)
-            {
-                WriteFile(Path.Combine(buildPath, assetBundle.File), writer);
-            }
-        }
-
+        
         private void WriteFile(string filename, BinaryWriter writer)
         {
             writer.Write((int) new FileInfo(filename).Length);

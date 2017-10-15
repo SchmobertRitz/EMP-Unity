@@ -27,7 +27,10 @@ namespace EMP.LivingAsset
         public static List<string> CollectFiles(string path, Func<string, bool> matcher)
         {
             List<String> result = new List<string>();
-            CollectFiles(path, matcher, result);
+            if (Directory.Exists(path))
+            {
+                CollectFiles(path, matcher, result);
+            }
             return result;
         }
 

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<Manifest name="EMP.Test" description="Das ist ein Test">
+  <Dependencies>
+    <Dependency name="EMP.Test2" />
+  </Dependencies>
+</Manifest>

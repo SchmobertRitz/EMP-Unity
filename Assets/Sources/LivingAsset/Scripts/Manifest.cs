@@ -2,6 +2,8 @@
 // MIT License
 // Copyright (c) EMP - https://github.com/SchmobertRitz/EMP-Unity
 //
+using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Xml.Serialization;
 using UnityEngine;
@@ -9,6 +11,7 @@ using UnityEngine;
 namespace EMP.LivingAsset
 {
     [XmlRoot]
+    [Serializable]
     public class Manifest
     {
         public const string FILE_NAME = "Manifest.xml";
@@ -36,15 +39,10 @@ namespace EMP.LivingAsset
         public string Description;
         
         [XmlArray]
-        public AssetBundle[] AssetBundles;
-
-        [XmlArray]
-        public Library[] Libraries;
-
-        [XmlArray]
-        public Dependency[] Dependencies;
+        public List<Dependency> Dependencies;
     }
 
+    [Serializable]
     public class Dependency
     {
         [XmlAttribute("name")]
@@ -53,19 +51,5 @@ namespace EMP.LivingAsset
         [XmlAttribute("file")]
         public string File;
     }
-
-    public class Library
-    {
-        [XmlAttribute("file")]
-        public string File;
-
-        [XmlAttribute("initializer")]
-        public string Initializer;
-    }
-
-    public class AssetBundle
-    {
-        [XmlAttribute("file")]
-        public string File;
-    }
+    
 }
