@@ -10,6 +10,9 @@ namespace EMP.Editor
         public const string CREATE_CLASS = "Assets/Create/Create C# Class...";
         public const string CREATE_FOLDER = "Assets/Create/Create Folder...";
         public const string CREATE_SUBFOLDERS_HERE = "Assets/Create/Create Subfolders...";
+
+
+        public const string INIT_LIVINGASSET_HERE = "Assets/Living Asset/Init New LivingAsset Here";
     }
 }
 

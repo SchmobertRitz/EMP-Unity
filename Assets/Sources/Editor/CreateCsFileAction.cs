@@ -134,22 +134,27 @@ namespace EMP.Editor
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-#if GENLOGGER == True
-// Logger definition here
-#endif
 
 #if HASNAMESPACE == True
 namespace #NAMESPACE#
 {
     public class #CLASS#
     {
-
+#if GENLOGGER == True
+        private ILogger Logger = Debug.logger;
+#endif
+        
+        // Start coding here
     }
 }
 #else
 public class #CLASS#
 {
-
+#if GENLOGGER == True
+        private ILogger Logger = Debug.logger;
+#endif
+        
+        // Start coding here
 }
 #endif";
         }
