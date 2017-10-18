@@ -22,7 +22,8 @@ GameObject:
   - component: {fileID: 33024097767185528}
   - component: {fileID: 65498342633929262}
   - component: {fileID: 23246029360987130}
-  - component: {fileID: 114690637708836830}
+  - component: {fileID: 114342762867489732}
+  - component: {fileID: 114497379739811970}
   m_Layer: 0
   m_Name: RotatingCube
   m_TagString: Untagged
@@ -94,7 +95,7 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &114690637708836830
+--- !u!114 &114342762867489732
 MonoBehaviour:
   m_ObjectHideFlags: 1
   m_PrefabParentObject: {fileID: 0}
@@ -102,6 +103,17 @@ MonoBehaviour:
   m_GameObject: {fileID: 1467905549827020}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 1710245993, guid: 0ada38702d0e9ee419f749644fa1ef0b, type: 3}
+  m_Script: {fileID: -990599965, guid: 0ada38702d0e9ee419f749644fa1ef0b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &114497379739811970
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1467905549827020}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: -1541790885, guid: 0ada38702d0e9ee419f749644fa1ef0b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 

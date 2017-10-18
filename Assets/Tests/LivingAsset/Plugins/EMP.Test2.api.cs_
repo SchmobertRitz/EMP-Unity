@@ -1,0 +1,24 @@
+// This a a generated file. Do not modify.
+
+using UnityEngine;
+using System;
+using EMP.Animations;
+
+namespace EMP.Test2
+{
+    public class Api
+    {
+        private const string LIVING_ASSET_NAME = "EMP.Test2";
+
+
+
+        public static void AddRotateComponent(GameObject gameObject) {
+            AnimateThis.With(gameObject.transform).Transform().ToScale(3).Start();
+        }
+
+        public static MonoBehaviour GetRotateComponent(GameObject gameObject) {
+            return null;
+        }
+
+    }
+}
