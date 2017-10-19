@@ -60,18 +60,18 @@ namespace EMP.Editor
             Label lblNamespace = new Label("Namespace:");
             lblNamespace.Width = 150;
             txtNamespace = new TextField(transitiveSourceInfo.@namespace);
-            Linear lyNamespace = Linear.Horizontal().Add(lblNamespace).Add(txtNamespace);
+            LinearLayout lyNamespace = LinearLayout.Horizontal().Add(lblNamespace).Add(txtNamespace);
             lyNamespace.Height = 30;
             
             Label lblFolder = new Label("Folder:");
             lblFolder.Width = 150;
             txtFolderName = new TextField();
-            Linear lyFolder = Linear.Horizontal().Add(lblFolder).Add(txtFolderName);
+            LinearLayout lyFolder = LinearLayout.Horizontal().Add(lblFolder).Add(txtFolderName);
             lyFolder.Height = 30;
             lblError = new Label("");
             lblError.style.fontStyle = FontStyle.Bold;
 
-            Linear lyButton = Linear.Horizontal();
+            LinearLayout lyButton = LinearLayout.Horizontal();
             Button button = new Button("Ok", ButtonClicked);
             button.Width = 100;
             lyButton.Add(new View()).Add(button);
@@ -79,7 +79,7 @@ namespace EMP.Editor
             Label lblSubfolders = new Label("Create subfolders:");
             lblSubfolders.Width = 150;
 
-            Grid lyCheckboxes = new Grid(3, Grid.EOrientation.Vertical);
+            GridLayout lyCheckboxes = new GridLayout(3, GridLayout.EOrientation.Vertical);
             
             foreach(string folder in new string[] { "Scripts", "Scenes", "Prefabs", "Resources", "Textures", "Materials", "Meshes" })
             {
@@ -88,7 +88,7 @@ namespace EMP.Editor
                 lyCheckboxes.Add(toggle);
             }
 
-            Linear lySubfolders = Linear.Horizontal().Add(lblSubfolders).Add(lyCheckboxes);
+            LinearLayout lySubfolders = LinearLayout.Horizontal().Add(lblSubfolders).Add(lyCheckboxes);
 
             form.Add(lyNamespace);
             form.Add(lyFolder);

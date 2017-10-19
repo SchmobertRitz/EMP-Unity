@@ -50,7 +50,7 @@ namespace EMP.Editor
 
             form.Add(new Headline("Create Subfolders"));
 
-            Linear lyButton = Linear.Horizontal();
+            LinearLayout lyButton = LinearLayout.Horizontal();
             Button button = new Button("Ok", ButtonClicked);
             button.Width = 100;
             lyButton.Add(new View()).Add(button);
@@ -58,7 +58,7 @@ namespace EMP.Editor
             Label lblSubfolders = new Label("Subfolders:");
             lblSubfolders.Width = 150;
 
-            Grid lyCheckboxes = new Grid(3, Grid.EOrientation.Vertical);
+            GridLayout lyCheckboxes = new GridLayout(3, GridLayout.EOrientation.Vertical);
             
             foreach(string folder in new string[] { "Scripts", "Scenes", "Prefabs", "Resources", "Textures", "Materials", "Meshes" })
             {
