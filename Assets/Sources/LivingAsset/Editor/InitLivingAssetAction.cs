@@ -9,6 +9,7 @@ using UnityEditor;
 using UnityEngine;
 using EMP.Forms;
 using System;
+using System.IO;
 
 namespace EMP.LivingAsset
 {
@@ -21,6 +22,12 @@ namespace EMP.LivingAsset
         {
             string path = SelectionHelper.GetSelectedPath();
 
+            ManifestEditor manifestEditor = ScriptableObject.CreateInstance<ManifestEditor>();
+            AssetDatabase.CreateAsset(manifestEditor, Path.Combine(path, "Manifest.asset"));
+            AssetDatabase.CreateFolder(path, "Scripts");
+            AssetDatabase.CreateFolder(path, "Libs");
+            AssetDatabase.CreateFolder(path, "Assets");
+            AssetDatabase.Refresh();
         }
 
     }

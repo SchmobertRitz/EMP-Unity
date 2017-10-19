@@ -19,17 +19,30 @@ namespace EMP.LivingAsset
         public static Manifest CreateFromPath(string manifestPath)
         {
             XmlSerializer serializer = new XmlSerializer(typeof(Manifest));
-            FileStream fs = new FileStream(manifestPath, FileMode.Open);
-            Manifest manifest = (Manifest)serializer.Deserialize(fs);
-            return manifest;
+            using (FileStream fs = new FileStream(manifestPath, FileMode.Open))
+            {
+                Manifest manifest = (Manifest)serializer.Deserialize(fs);
+                return manifest;
+            }
         }
 
         public static Manifest CreateFromBytes(byte[] bytes)
         {
             XmlSerializer serializer = new XmlSerializer(typeof(Manifest));
-            MemoryStream ms = new MemoryStream(bytes);
-            Manifest manifest = (Manifest)serializer.Deserialize(ms);
-            return manifest;
+            using (MemoryStream ms = new MemoryStream(bytes))
+            {
+                Manifest manifest = (Manifest)serializer.Deserialize(ms);
+                return manifest;
+            }
+        }
+
+        public static void WriteToPath(Manifest manifest, string manifestPath)
+        {
+            XmlSerializer serializer = new XmlSerializer(typeof(Manifest));
+            using(FileStream stream = File.OpenWrite(manifestPath))
+            {
+                serializer.Serialize(stream, manifest);
+            }
         }
 
         [XmlAttribute("name")]

@@ -58,13 +58,13 @@ namespace EMP.Editor
             Label lblNamespace = new Label("Namespace:");
             lblNamespace.Width = 150;
             txtNamespace = new TextField(sourcesInfo.@namespace);
-            Linear lyNamespace = Linear.Horizontal().Add(lblNamespace).Add(txtNamespace);
+            LinearLayout lyNamespace = LinearLayout.Horizontal().Add(lblNamespace).Add(txtNamespace);
             lyNamespace.Height = 30;
 
             Label lblClassName = new Label("Class name:");
             lblClassName.Width = 150;
             txtClassName = new TextField();
-            Linear lyClassName = Linear.Horizontal().Add(lblClassName).Add(txtClassName);
+            LinearLayout lyClassName = LinearLayout.Horizontal().Add(lblClassName).Add(txtClassName);
             lyClassName.Height = 30;
 
             form.Add(lyNamespace);
@@ -75,7 +75,7 @@ namespace EMP.Editor
             form.Add(tglHeaderComment = new Toggle(true, "Generate source code header comment"));
             form.Add(tglLogger = new Toggle(true, "Generate logger"));
 
-            Linear lyButton = Linear.Horizontal();
+            LinearLayout lyButton = LinearLayout.Horizontal();
             Button button = new Button("Ok", ButtonClicked);
             button.Width = 100;
             lyButton.Add(new View()).Add(button);

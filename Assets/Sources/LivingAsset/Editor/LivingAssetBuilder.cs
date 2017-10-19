@@ -13,6 +13,10 @@ namespace EMP.LivingAsset
 {
     public class LivingAssetBuilder : MonoBehaviour
     {
+        public const string ASSETS_PATH = "Assets";
+        public const string API_PATH = "Api";
+        public const string LIBRARY_PATH = "Libs";
+
         private static SecureString privateKeyPassword;
         private static string privateKeyPath = "privatekey.xml";
 
@@ -33,21 +37,24 @@ namespace EMP.LivingAsset
             if (SelectionHelper.IsDirectorySelected())
             {
                 string path = SelectionHelper.GetSelectedPath();
-                if (DllCompiler.IsFileStructureCorrect(path))
-                {
-                    string manifestPath = string.Format(@"{0}/{1}", path, Manifest.FILE_NAME);
-                    string buildPath = string.Format(@"{0}/{1}", path, DllCompiler.LIBRARY_PATH);
-
-                    Manifest manifest = Manifest.CreateFromPath(manifestPath);
-                    DllCompiler dllCompiler = new DllCompiler(path, buildPath, manifest);
-                    dllCompiler.Compile();
-                    AssetDatabase.Refresh();
-                    Debug.Log("*** Finished Compiling C# Sources ***");
-                }
+                CompileCsSources(path);
             }
         }
-        public const string ASSETS_PATH = "Assets";
-        public const string API_PATH = "Api";
+
+        public static void CompileCsSources(string path)
+        {
+            if (IsFileStructureCorrect(path))
+            {
+                string manifestPath = string.Format(@"{0}/{1}", path, ManifestEditor.FILE_NAME);
+                string buildPath = string.Format(@"{0}/{1}", path, LIBRARY_PATH);
+
+                Manifest manifest = ManifestEditor.CreateFromPath(manifestPath);
+                DllCompiler dllCompiler = new DllCompiler(path, buildPath, manifest);
+                dllCompiler.Compile();
+                AssetDatabase.Refresh();
+                Debug.Log("*** Finished Compiling C# Sources ***");
+            }
+        }
 
         [MenuItem("Assets/Living Asset/Build Living Asset", validate = false)]
         public static void LivingAsset_BuildLivingAsset()
@@ -55,13 +62,13 @@ namespace EMP.LivingAsset
             if (Selection.activeObject != null && Selection.activeObject.GetType().IsAssignableFrom(typeof(DefaultAsset)))
             {
                 string sourcePath = AssetDatabase.GetAssetPath(Selection.activeObject.GetInstanceID());
-                if (DllCompiler.IsFileStructureCorrect(sourcePath))
+                if (IsFileStructureCorrect(sourcePath))
                 {
-                    string manifestPath = string.Format(@"{0}/{1}", sourcePath, Manifest.FILE_NAME);
+                    string manifestPath = string.Format(@"{0}/{1}", sourcePath, ManifestEditor.FILE_NAME);
                     string buildPath = FilesHelper.CreateBuildPath(sourcePath);
 
-                    string libsBuildPath = Path.Combine(buildPath, DllCompiler.LIBRARY_PATH);
-                    string libsSourcePath = Path.Combine(sourcePath, DllCompiler.LIBRARY_PATH);
+                    string libsBuildPath = Path.Combine(buildPath, LIBRARY_PATH);
+                    string libsSourcePath = Path.Combine(sourcePath, LIBRARY_PATH);
 
                     string apiBuildPath = Path.Combine(buildPath, API_PATH);
 
@@ -71,10 +78,10 @@ namespace EMP.LivingAsset
                     Directory.CreateDirectory(libsBuildPath);
                     Directory.CreateDirectory(assetBundleBuildPath);
 
-                    Manifest manifest = Manifest.CreateFromPath(manifestPath);
+                    Manifest manifest = ManifestEditor.CreateFromPath(manifestPath);
 
                     // Copy Manifest
-                    File.Copy(manifestPath, string.Format(@"{0}/{1}", buildPath, Manifest.FILE_NAME));
+                    Manifest.WriteToPath(manifest, string.Format(@"{0}/{1}", buildPath, Manifest.FILE_NAME));
 
                     // Generate Sources and Libs 
                     DllCompiler dllCompiler = new DllCompiler(sourcePath, libsSourcePath, manifest);
@@ -114,9 +121,17 @@ namespace EMP.LivingAsset
             if (!Application.isPlaying && Selection.activeObject != null && Selection.activeObject.GetType().IsAssignableFrom(typeof(DefaultAsset)))
             {
                 string path = AssetDatabase.GetAssetPath(Selection.activeObject.GetInstanceID());
-                return DllCompiler.IsFileStructureCorrect(path);
+                return IsFileStructureCorrect(path);
             }
             return false;
         }
+        
+        public static bool IsFileStructureCorrect(string path)
+        {
+            return Directory.Exists(path)
+                    && ((File.GetAttributes(path) & FileAttributes.Directory) == FileAttributes.Directory)
+                    && File.Exists(Path.Combine(path, ManifestEditor.FILE_NAME));
+        }
+
     }
 }

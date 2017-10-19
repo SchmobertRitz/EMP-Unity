@@ -1,7 +1,0 @@
-ManifestFileVersion: 0
-CRC: 1580426338
-AssetBundleManifest:
-  AssetBundleInfos:
-    Info_0:
-      Name: emp.test2.asset
-      Dependencies: {}

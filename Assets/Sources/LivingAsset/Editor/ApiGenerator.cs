@@ -33,10 +33,12 @@ namespace EMP.LivingAsset
 
         public void GenerateApi()
         {
-            Assembly assembly = Assembly.Load(File.ReadAllBytes(filepath));
-            List<Type> unityScripts = new List<Type>(Array.FindAll(assembly.GetTypes(), type => type.IsSubclassOf(typeof(MonoBehaviour))));
-            
-            Dictionary<string, object> data = new Dictionary<string, object> {
+            if (File.Exists(filepath))
+            {
+                Assembly assembly = Assembly.Load(File.ReadAllBytes(filepath));
+                List<Type> unityScripts = new List<Type>(Array.FindAll(assembly.GetTypes(), type => type.IsSubclassOf(typeof(MonoBehaviour))));
+
+                Dictionary<string, object> data = new Dictionary<string, object> {
                 { "NAMESPACE", manifest.Name },
                 { "LIVNGASSETNAME", manifest.Name },
                 { "DATA",
@@ -50,10 +52,15 @@ namespace EMP.LivingAsset
                 }
             };
 
-            CsGenerator generator = new UnityScriptsGenerator();
-            string generatedCode = generator.Generate(data);
-            Directory.CreateDirectory(buildPath);
-            File.WriteAllText(Path.Combine(buildPath, manifest.Name + ".api.cs"), generatedCode);
+                CsGenerator generator = new UnityScriptsGenerator();
+                string generatedCode = generator.Generate(data);
+                Directory.CreateDirectory(buildPath);
+                File.WriteAllText(Path.Combine(buildPath, manifest.Name + ".api.cs"), generatedCode);
+            } else
+            {
+                Directory.CreateDirectory(buildPath);
+                File.WriteAllText(Path.Combine(buildPath, manifest.Name + ".api.cs"), "// No API generated");
+            }
         }
 
         private object DeriveComponentName(Type type)

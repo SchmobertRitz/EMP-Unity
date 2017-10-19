@@ -14,27 +14,27 @@ public class FormTest : MonoBehaviour {
         Label labelNamespace = new Label("Component Namespace:");
         labelNamespace.Width = 150;
         TextField txtNamespace = new TextField();
-        Linear componentNamespace = Linear.Horizontal().Add(labelNamespace).Add(txtNamespace);
+        LinearLayout componentNamespace = LinearLayout.Horizontal().Add(labelNamespace).Add(txtNamespace);
         componentNamespace.Height = 30;
         form.Add(componentNamespace);
 
         Label labelComponentName = new Label("Name of Component:");
         labelComponentName.Width = 150;
         TextField txtComponentName = new TextField();
-        Linear componentName = Linear.Horizontal().Add(labelComponentName).Add(txtComponentName);
+        LinearLayout componentName = LinearLayout.Horizontal().Add(labelComponentName).Add(txtComponentName);
         componentName.Height = 30;
         form.Add(componentName);
 
         form.Add(new Label("Generate following folders in component:"));
 
-        Linear toggles = Linear.Horizontal();
-        Linear left = Linear.Vertical();
+        LinearLayout toggles = LinearLayout.Horizontal();
+        LinearLayout left = LinearLayout.Vertical();
         left.Width = 100;
         left.Add(new Toggle(true, "Scripts"));
         left.Add(new Toggle(true, "Meshes"));
         left.Add(new Toggle(true, "Materials"));
 
-        Linear right = Linear.Vertical();
+        LinearLayout right = LinearLayout.Vertical();
         right.Width = 100;
         right.Add(new Toggle(true, "Prefabs"));
         right.Add(new Toggle(true, "Ressoures"));
@@ -42,7 +42,7 @@ public class FormTest : MonoBehaviour {
         toggles.Add(left).Add(right);
         form.Add(toggles);
 
-        Linear buttonContainer = Linear.Horizontal();
+        LinearLayout buttonContainer = LinearLayout.Horizontal();
 
         form.Add(buttonContainer);
 

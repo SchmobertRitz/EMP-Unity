@@ -18,15 +18,6 @@ namespace EMP.LivingAsset
         private readonly Manifest manifest;
         private readonly string buildPath;
 
-        public const string LIBRARY_PATH = "Libs";
-
-        public static bool IsFileStructureCorrect(string path)
-        {
-            return Directory.Exists(path)
-                    && ((File.GetAttributes(path) & FileAttributes.Directory) == FileAttributes.Directory)
-                    && File.Exists(Path.Combine(path, Manifest.FILE_NAME));
-        }
-
         public DllCompiler(string path, string buildPath, Manifest manifest)
         {
             this.path = path;

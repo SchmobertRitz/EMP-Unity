@@ -47,6 +47,11 @@ namespace EMP.Editor {
         {
             return GetFormSize();
         }
+
+        public void Close()
+        {
+            editorWindow.Close();
+        }
     }
 
 }

@@ -24,8 +24,7 @@ namespace EMP.Test
                 dep => { Debug.Log("Dep.: " + dep); return true; }
             );
             //loader1.Load();
-            Debug.Log(typeof(Test2.Api) + " /");
-            Test2.Api.AddRotateComponent(GameObject.Find("Sphere"));
+        
             //Array.ForEach(GameObject.Find("RotatingCube(Clone)").GetComponents<MonoBehaviour>(), c => Destroy(c));
             //Destroy(Test2.Api.GetRotateComponent(GameObject.Find("RotatingCube(Clone)")));
 
