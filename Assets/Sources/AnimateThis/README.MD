@@ -89,9 +89,9 @@ You already know the value animations. Of course, you can use the value animatio
 
 Currently supported AudioSource properties are:
 
-* Volume: `FromVolume(float)`and `ToVolume(float)
-* Stereo Pan: `FromPan(float)`and `ToPan(float)
-* Spatial Blend: `FromTo(float)`and `ToSpatial(float)
+* Volume: `FromVolume(float)`and `ToVolume(float)`
+* Stereo Pan: `FromPan(float)`and `ToPan(float)`
+* Spatial Blend: `FromTo(float)`and `ToSpatial(float)`
 
 #### Preview: Light Animations ####
 A convenience API for modifying Lights is not available at the moment, but planned.
