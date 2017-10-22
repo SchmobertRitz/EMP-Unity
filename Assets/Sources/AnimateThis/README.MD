@@ -83,7 +83,7 @@ The methods `Dealay`, `OnStart` and `OnEnd` are also available and can be used i
 
 This way, you can animate nearly everything, e.g. the emission value of a texture or the field of view of your main camera.
 
-#### Audio Animation ####
+#### Audio Animations ####
 
 You already know the value animations. Of course, you can use the value animations feature to modify the properties of an Unity AudioSource, but since this is a very common usecase, there is a specialized API available to support this usecase in a convenient way.
 
@@ -100,9 +100,9 @@ A convenience API for modifying Lights is not available at the moment, but plann
 TODO
 ### Sequencing Animations ###
 
-Sometimes, you want to happen a couple of animations in sequence: E.g.: First, a GomeObject should pop in, then, it sould move to a certain position and after that, it should pop out again.
+Sometimes, you want to happen a couple of animations in sequence: E.g.: First, a GameObject should pop in, then, it sould move to a certain position and after that, it should pop out again.
 
-You could reach this effect by chainging the animations using the `OnEnd`handler. But this tends to result in ugly code, because you have to nest the code of the preceding animations in the `OnEnd`handler.
+You could reach this effect by chaining the animations using the `OnEnd`handler. But this tends to result in ugly code, because you have to nest the code of the following animations in the `OnEnd` handler of the preceding animation.
 
 This is why, there is an API support available for concatenating animations.
 
