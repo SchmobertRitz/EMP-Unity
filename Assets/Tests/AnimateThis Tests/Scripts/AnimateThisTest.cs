@@ -25,6 +25,27 @@ public class AnimateThisTest : MonoBehaviour {
             .ToVolume(0)
             .Duration(float.PositiveInfinity)
             .Start();
+
+        AnimateThis.With(this)
+            .Transform()
+            .ToScale(0)
+            .OnEnd(() => Destroy(this.gameObject))
+            .Delay(0.125f)
+            .Duration(0.25f)
+            .Ease(AnimateThis.EaseInQuintic)
+            .Start();
+
+        TextMesh txt = GetComponent<TextMesh>();
+        AnimateThis.With(txt.transform)
+            .Value(size => txt.fontSize = (int)size)
+            .From(0)
+            .To(100)
+            .Duration(2)
+            .Ease(t => t * t)
+            .Start();
+
+
+
         Debug.Log("test");
 	}
 

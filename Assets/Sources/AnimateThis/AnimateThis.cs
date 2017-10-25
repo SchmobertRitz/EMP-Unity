@@ -50,6 +50,26 @@ namespace EMP.Animations
             return Mathf.Pow(2, -10 * t) * Mathf.Sin((t - p / 4) * (2 * Mathf.PI) / p) + 1;
         }
 
+        public static float EaseOutBounce(float t)
+        {
+            if ((t) < (1 / 2.75))
+            {
+                return (7.5625f * t * t);
+            }
+            else if (t < (2f / 2.75f))
+            {
+                return (7.5625f * (t -= (1.5f / 2.75f)) * t + .75f);
+            }
+            else if (t < (2.5 / 2.75))
+            {
+                return (7.5625f * (t -= (2.25f / 2.75f)) * t + .9375f);
+            }
+            else
+            {
+                return (7.5625f * (t -= (2.625f / 2.75f)) * t + .984375f);
+            }
+        }
+
         public static float EaseInOutSinus(float t)
         {
             return (Mathf.Sin(t * Mathf.PI - Mathf.PI / 2) + 1) / 2;
