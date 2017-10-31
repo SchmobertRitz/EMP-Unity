@@ -13,8 +13,8 @@ namespace EMP.Animations
         AnimateThis.TransformAnimationBuilder Transform();
         AnimateThis.ValueAnimationBuilder Value(Action<float> handler);
         AnimateThis.AudioAnimationBuilder Audio(AudioSource audioSource = null);
-        IAnimateThis CancelAll();
-        IAnimateThis Cancel(AnimateThis.Animation animation);
+        IAnimateThis CancelAll(bool callOnEndHandler = false);
+        IAnimateThis Cancel(AnimateThis.Animation animation, bool callOnEndHandler = false);
     }
 
     public class AnimateThis : MonoBehaviour, IAnimateThis
@@ -269,6 +269,7 @@ namespace EMP.Animations
             internal Action onAnimationCancelled;
             internal bool isPlaying;
             internal bool isCanceled;
+            internal object tag;
         }
 
         public class InvalidAnimation : Animation
@@ -286,6 +287,7 @@ namespace EMP.Animations
             internal Action onAnimationEndAction;
             internal Action onAnimationCancelledAction;
             internal AnimationBuilder delegateBuilder;
+            internal object tag;
 
             public Animation Start()
             {
@@ -310,6 +312,7 @@ namespace EMP.Animations
                 result.onAnimationStart = onAnimationStartAction;
                 result.onAnimationEnd = onAnimationEndAction;
                 result.onAnimationCancelled = onAnimationCancelledAction;
+                result.tag = tag;
 
                 if (result.timeStart == result.timeStop)
                 {
@@ -344,6 +347,12 @@ namespace EMP.Animations
             {
                 this.animator = animator;
                 this.animatable = animatable;
+            }
+
+            public T Tag(object tag)
+            {
+                this.tag = tag;
+                return (T)this;
             }
 
             public T Duration(float duration)
@@ -389,15 +398,15 @@ namespace EMP.Animations
                 this.delegateBuilder = delegateBuilder;
             }
 
-            public IAnimateThis Cancel(Animation animation)
+            public IAnimateThis Cancel(Animation animation, bool callOnEndHandler = false)
             {
-                delegateInstance.Cancel(animation);
+                delegateInstance.Cancel(animation, callOnEndHandler);
                 return this;
             }
 
-            public IAnimateThis CancelAll()
+            public IAnimateThis CancelAll(bool callOnEndHandler = false)
             {
-                delegateInstance.CancelAll();
+                delegateInstance.CancelAll(callOnEndHandler);
                 return this;
             }
 
@@ -588,15 +597,37 @@ namespace EMP.Animations
 
         private List<Animation> animations = new List<Animation>();
 
-        public IAnimateThis CancelAll()
+        public IAnimateThis CancelAll(bool callOnEndHandler = false)
         {
-            animations.Clear();
+            if (animations.Count != 0)
+            {
+                new List<Animation>(animations).ForEach(a => Cancel(a, callOnEndHandler));
+            }
             return this;
         }
 
-        public IAnimateThis Cancel(Animation animation)
+        public IAnimateThis CancelByTag(object tag, bool callOnEndHandler = false)
         {
-            animations.Remove(animation);
+            if (animations.Count != 0)
+            {
+                new List<Animation>(animations).FindAll(a => a.tag == tag).ForEach(a => Cancel(a, callOnEndHandler));
+            }
+            return this;
+        }
+        
+        public IAnimateThis Cancel(Animation animation, bool callOnEndHandler = false)
+        {
+            if (animations.Remove(animation))
+            {
+                if (animation.onAnimationCancelled != null)
+                {
+                    animation.onAnimationCancelled();
+                }
+                if (callOnEndHandler && animation.onAnimationEnd != null)
+                {
+                    animation.onAnimationEnd();
+                }
+            }
             return this;
         }
 

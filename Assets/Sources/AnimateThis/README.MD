@@ -37,11 +37,11 @@ In the example above, you see no information about how long the animation should
 
 If you want to delay the execution of your animation, you can use the `Delay(float)` method.
 
-When running the animation example in Unity, you will see that the object you animate shrinks with a constant speed: At tha start time of the animation, it will have a scale of (1, 1, 1), after a half second, the scale will be (0.5, 0.5, 0.5) and after one second, the scale will be (0, 0, 0). This linear scaling tends to be a bit of boring, so you should alter the so called ease curve of the animation. Use the method `Ease(float => float)` to set an ease curve that makes the animation a bit more dnamic. A ease curve is simply a function that maps a float in the range of [0, 1] to another float.. mostly in the same range [0, 1]. More about ease curves will follow in a seperat section.
+When running the animation example in Unity, you will see that the object you animate shrinks with a constant speed: At the start time of the animation, it will have a scale of (1, 1, 1), after a half second, the scale will be (0.5, 0.5, 0.5) and after one second, the scale will be (0, 0, 0). This linear scaling tends to be a bit of boring, so you should alter the so called ease curve of the animation. Use the method `Ease(float => float)` to set an ease curve that makes the animation a bit more dnamic. A ease curve is simply a function that maps a float in the range of [0, 1] to another float.. mostly in the same range [0, 1]. More about ease curves will follow in a seperat section.
 
 This code example shows how to use the methods described in the section above.
 
-```
+```csharp
    AnimateThis.With(this)
       .Transform()
       .FromScale(transform.localScale)
@@ -126,6 +126,79 @@ This is why, there is an API support available for concatenating animations.
 In this example, an object is first moved down about 1 meter, and then moved up about the same distance. After doing this, the object vanishes, because its scaled to zero and after the object got invisible, the AudioSource (that is attached to the object) is faded to mute.
 
 ### A Little Deeper Into Easing Curves ###
-TODO
+
+In our physical world, almost everything that starts moving accelerates and almost everything that stops moving slows down before the movement ends. This effects are the result of the interaction between factors like mass, force and drag. Animations with AnimateThis use interpolation over time to calculate the animation progress and does not simulate physical behaviour. This leads to a constant change rate of the animated properties between every frame of the animation. The visual impression of such linear animations look unnatural.
+
+You can use [ease curves](http://easings.net/de, "Ease Curve Cheat Sheet") to modify the animation progress over for a more physical like impression of your animations. Easing is a surprising prowerful technique, you can smooth the movements of objects and even can even simulate elastic and bouncing physical effects.
+
+The following example shows 3 GameObjects named "Ball 1-3". Every ball should fall from its current position to a position 3 meters lower. Ball 1 uses no ease curve and will move linear. Ball 2 will accelerate slowly and decelerate before it reaches his end position. Ball 3 uses an ease curve that simulates a elastic bounce effect. Look at the corresponding Unity Example Scene to get an impression of the big influence the choosen ease curve has on the animation. 
+
+```csharp
+void Start()
+        {
+            Transform ball1 = GameObject.Find("Ball1").transform;
+            Transform ball2 = GameObject.Find("Ball2").transform;
+            Transform ball3 = GameObject.Find("Ball3").transform;
+
+            AnimateThis.With(ball1)
+                .Transform()
+                .ToPosition(ball1.position + Vector3.down * 3)
+                .Duration(2)
+                .Start();
+
+            AnimateThis.With(ball2)
+                .Transform()
+                .ToPosition(ball2.position + Vector3.down * 3)
+                .Ease(AnimateThis.EaseInOutSmooth)
+                .Duration(2)
+                .Start();
+
+            AnimateThis.With(ball3)
+                .Transform()
+                .ToPosition(ball3.position + Vector3.down * 3)
+                .Ease(AnimateThis.EaseOutBounce)
+                .Duration(2)
+                .Start();
+        }
+```
+
+
+AnimateThis uses a very simple ease curve format: Every function `float => float` that maps a float in the range of [0, 1] to another float (mostly in the same range [0, 1]) can be used. Normally, an ease curve maps the value `0` to `0` and the value `1` to `1` and all other values in a range between 0 and 1. To define your own curves, you should be fit in trigonometry. If you don't like mathematics or your desired ease curve is too complex for quickly finding a good mathematical solution, you can also use the good old Unity AnimationCurves and the full power of the Curve Editor UI. Just define the curve in the editor and hand-over the `Evaluate` method to the AnimateThis framework:
+
+```csharp
+public class UnityAnimationCursves : MonoBehaviour
+    {
+        [SerializeField]
+        private AnimationCurve Curve;
+
+        void Start()
+        {
+            Transform ball1 = GameObject.Find("Ball1").transform;
+
+            AnimateThis.With(ball1)
+                .Transform()
+                .ToPosition(ball1.position + Vector3.down * 3)
+                .Ease(Curve.Evaluate)
+                .Duration(3)
+                .Start();
+        }
+    }
+```
+
+Have fun!
+
 ### Known Bugs And Common Pitfalls ###
-TODO
+
+#### Collider And Zero-Scale ####
+
+Look at the following snippet:
+
+```csharp
+   AnimateThis.With(this)
+      .Transform()
+      .ToScale(0) // better use Vector3.one * 0.00001f
+      .OnEnd(() => Destroy(this.gameObject))
+      .Start();
+```
+
+It's tempting to use this code for letting objects disappear in a cool way. But be careful if the object has colliders attached to itself or to one of its child. The Physics Engine used by Unity has a randomly appearing bug that crashes your Standalone Build when an object with collider has a scale of zero. Thus, you should use a very small scale factor instead of zero if you have an object with colliders.
