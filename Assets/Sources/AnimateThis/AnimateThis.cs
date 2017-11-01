@@ -15,6 +15,7 @@ namespace EMP.Animations
         AnimateThis.AudioAnimationBuilder Audio(AudioSource audioSource = null);
         IAnimateThis CancelAll(bool callOnEndHandler = false);
         IAnimateThis Cancel(AnimateThis.Animation animation, bool callOnEndHandler = false);
+        IAnimateThis CancelByTag(object tag, bool callOnEndHandler = false);
     }
 
     public class AnimateThis : MonoBehaviour, IAnimateThis
@@ -385,6 +386,12 @@ namespace EMP.Animations
                 return (T)this;
             }
 
+            public T OnCancel(Action onCancelDelegate)
+            {
+                onAnimationCancelledAction = onCancelDelegate;
+                return (T)this;
+            }
+
         }
 
         private class AnimationChainer : IAnimateThis
@@ -407,6 +414,12 @@ namespace EMP.Animations
             public IAnimateThis CancelAll(bool callOnEndHandler = false)
             {
                 delegateInstance.CancelAll(callOnEndHandler);
+                return this;
+            }
+
+            public IAnimateThis CancelByTag(object tag, bool callOnEndHandler = false)
+            {
+                delegateInstance.CancelByTag(tag, callOnEndHandler);
                 return this;
             }
 
@@ -610,7 +623,7 @@ namespace EMP.Animations
         {
             if (animations.Count != 0)
             {
-                new List<Animation>(animations).FindAll(a => a.tag == tag).ForEach(a => Cancel(a, callOnEndHandler));
+                new List<Animation>(animations).FindAll(a => tag == null && a.tag == null || tag == a.tag || tag != null && tag.Equals(a.tag)).ForEach(a => Cancel(a, callOnEndHandler));
             }
             return this;
         }
